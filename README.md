@@ -1,2 +1,2 @@
 # AgroTech
-repo agro tech
+Plataforma de Monitoreo Agrícola Inteligente
