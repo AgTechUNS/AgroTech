@@ -7,7 +7,7 @@ import logging
 
 from IngestionIoT.query_models import TelemetryQuery
 
-load_dotenv("credenciales.env")
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", "SimuladorSensores", "credenciales.env"))
 logging.getLogger("influxdb_client").setLevel(logging.ERROR)
 
 

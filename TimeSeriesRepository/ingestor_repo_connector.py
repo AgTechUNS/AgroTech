@@ -1,7 +1,7 @@
 import asyncio
 from IngestionIoT.iot_ingestion import IotIngestionService
 # Importamos la clase real que hizo tu compañero
-from TimeSeriesRepository import TimeSeriesRepository 
+from TimeSeriesRepository.TimeSeriesRepository import TimeSeriesRepository 
 
 async def main():
     # 1. Inicializamos el repositorio REAL de tu compañero dentro del event loop

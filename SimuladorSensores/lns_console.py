@@ -50,7 +50,7 @@ class ReceptionLog:
 # Estado del simulador
 # ---------------------------------------------------------------------------
 
-REGISTRO_FILE = "registro_lns.json"
+REGISTRO_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "registro_lns.json")
 BROKER = os.getenv("BROKER", "localhost")
 PORT = int(os.getenv("PORT", "1883"))
 
