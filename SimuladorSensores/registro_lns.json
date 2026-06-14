@@ -1,0 +1,88 @@
+{
+  "campos": [
+    "campo-0",
+    "campo-1",
+    "campoTomi",
+    "DAVIDCAMPO"
+  ],
+  "gateways": [
+    {
+      "gateway_id": "gateway-0",
+      "campo_id": "campo-0"
+    },
+    {
+      "gateway_id": "gateway-1",
+      "campo_id": "campo-1"
+    },
+    {
+      "gateway_id": "gayway1",
+      "campo_id": "campoTomi"
+    },
+    {
+      "gateway_id": "DAVIDANTENA",
+      "campo_id": "DAVIDCAMPO"
+    }
+  ],
+  "sensors": [
+    {
+      "device_id": "sensor-0",
+      "campo_id": "campo-0",
+      "parcela_id": "parcela-0"
+    },
+    {
+      "device_id": "sensor-1",
+      "campo_id": "campo-0",
+      "parcela_id": "parcela-1"
+    },
+    {
+      "device_id": "sensor-2",
+      "campo_id": "campo-0",
+      "parcela_id": "parcela-2"
+    },
+    {
+      "device_id": "sensor-01",
+      "campo_id": "campo-1",
+      "parcela_id": "parcela-0"
+    },
+    {
+      "device_id": "sensor-11",
+      "campo_id": "campo-1",
+      "parcela_id": "parcela-1"
+    },
+    {
+      "device_id": "sensor-21",
+      "campo_id": "campo-1",
+      "parcela_id": "parcela-2"
+    },
+    {
+      "device_id": "sensor-31",
+      "campo_id": "campo-1",
+      "parcela_id": "parcela-3"
+    },
+    {
+      "device_id": "sensor0",
+      "campo_id": "campoTomi",
+      "parcela_id": "parcela0"
+    },
+    {
+      "device_id": "sensor1",
+      "campo_id": "campoTomi",
+      "parcela_id": "parcela0"
+    },
+    {
+      "device_id": "sensor2",
+      "campo_id": "campoTomi",
+      "parcela_id": "parcela0"
+    },
+    {
+      "device_id": "sensorD0",
+      "campo_id": "DAVIDCAMPO",
+      "parcela_id": "parcela0"
+    },
+    {
+      "device_id": "sensorD2",
+      "campo_id": "DAVIDCAMPO",
+      "parcela_id": "parcela1"
+    }
+  ]
+}
