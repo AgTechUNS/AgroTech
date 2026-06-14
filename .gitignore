@@ -1,3 +1,16 @@
 #Carpetas
 
 /ArchivosLocales/
+/.opencode/
+
+# Credenciales y secrets (nunca committear)
+service_account.json
+secrets/
+
+# Entorno local
+.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc
