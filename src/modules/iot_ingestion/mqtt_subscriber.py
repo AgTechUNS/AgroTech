@@ -7,13 +7,13 @@ import time
 import os
 from collections import OrderedDict
 from datetime import datetime
-from IngestionIoT.domain_models import LecturaNormalizada
-from IngestionIoT.ports import TimeSeriesRepositoryInterface
+from modules.iot_ingestion.schemas import LecturaNormalizada
+from modules.iot_ingestion.ports import TimeSeriesRepositoryInterface
 
 
 class TTLCache:
     """Caché TTL simple sin dependencias externas.
-    Clave: f”{sensor_id}_{timestamp}” → expira tras ttl segundos.
+    Clave: f"{sensor_id}_{timestamp}" → expira tras ttl segundos.
     """
     def __init__(self, maxsize: int = 10000, ttl: int = 3600):
         self._cache: OrderedDict[str, float] = OrderedDict()

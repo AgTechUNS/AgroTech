@@ -1,6 +1,6 @@
 from typing import Protocol
-from IngestionIoT.domain_models import LecturaNormalizada
-from IngestionIoT.query_models import TelemetryQuery
+from modules.iot_ingestion.schemas import LecturaNormalizada
+from modules.iot_ingestion.query_models import TelemetryQuery
 
 class TimeSeriesRepositoryInterface(Protocol):
     async def guardar_telemetria(self, lectura: LecturaNormalizada) -> None:

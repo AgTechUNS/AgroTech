@@ -5,9 +5,9 @@ from influxdb_client import Point
 from influxdb_client.client.influxdb_client_async import InfluxDBClientAsync
 import logging
 
-from IngestionIoT.query_models import TelemetryQuery
+from modules.iot_ingestion.query_models import TelemetryQuery
 
-load_dotenv(os.path.join(os.path.dirname(__file__), "..", "SimuladorSensores", "credenciales.env"))
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "tools", "simulador_sensores", "credenciales.env"))
 logging.getLogger("influxdb_client").setLevel(logging.ERROR)
 
 
@@ -153,5 +153,3 @@ class TimeSeriesRepository:
                 print(f"[TimeSeriesRepository] Conexión cerrada")
             except Exception as e:
                 print(f"Error al cerrar conexión: {e}")
-
-

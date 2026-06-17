@@ -37,7 +37,7 @@ Ambos métodos retornan `list[dict]`, donde cada dict corresponde a un registro 
 
 ```python
 from datetime import datetime, timedelta
-from IngestionIoT.query_models import TelemetryQuery
+from modules.iot_ingestion.query_models import TelemetryQuery
 
 resultado = await repo.query(TelemetryQuery(
     sensors=["sensor-0"],
