@@ -308,6 +308,39 @@ paths:
                     type: number
                     example: 45.2
 
+  /external/weather:
+    get:
+      summary: Obtener datos meteorológicos (Enriquecimiento Externo)
+      description: Endpoint de gateway que consulta Open-Meteo API para enriquecer predicciones del Analytics Engine.
+      tags:
+        - Integraciones Externas
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: lat
+          required: true
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+          description: Latitud (-90 a 90)
+        - in: query
+          name: lon
+          required: true
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+          description: Longitud (-180 a 180)
+      responses:
+        '200':
+          description: Datos meteorológicos obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherResponse'
+
 # ========================================================================
 # ────────────────────────── MÓDULO: AUTENTICACIÓN ───────────────────────
 # ========================================================================
@@ -467,6 +500,25 @@ components:
           type: string
           enum: [ADMIN, AGRONOMO, PRODUCTOR]
           example: "AGRONOMO"
+
+    WeatherResponse:
+      type: object
+      properties:
+        temperature_celsius:
+          type: number
+          example: 22.5
+        humidity_percent:
+          type: number
+          example: 65.3
+        timestamp:
+          type: string
+          format: date-time
+        latitude:
+          type: number
+          example: -38.0
+        longitude:
+          type: number
+          example: -62.5
 
     AlertaRecomendacion:
       type: object
