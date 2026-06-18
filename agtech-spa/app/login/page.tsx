@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { Button, Input, Card } from "@/components/ui";
 
 const ERROR_LABELS: Record<string, string> = {
   CREDENTIALS_INVALID: "Email o contraseña incorrectos.",
@@ -33,111 +34,71 @@ export default function LoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#f5f5f5",
+        background: "#f1f5f9",
       }}
     >
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          background: "#fff",
-          padding: "2rem",
-          borderRadius: "8px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          width: "100%",
-          maxWidth: "360px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "1rem",
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: "1.4rem", textAlign: "center" }}>
+      <Card style={{ width: "100%", maxWidth: 380 }}>
+        <h1 style={{ margin: "0 0 1.5rem", fontSize: "1.4rem", textAlign: "center" }}>
           AgTech UNS
         </h1>
 
         {error && (
-          <p
+          <div
             role="alert"
             style={{
               color: "#c0392b",
               background: "#fdecea",
               border: "1px solid #f5c6cb",
-              borderRadius: "4px",
+              borderRadius: "6px",
               padding: "0.6rem 0.8rem",
-              margin: 0,
+              marginBottom: "1rem",
               fontSize: "0.9rem",
             }}
           >
             {errorLabel(error)}
-          </p>
+          </div>
         )}
 
-        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Email</span>
-          <input
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <Input
+            label="Email"
             type="email"
             value={emailUsuario}
             onChange={(e) => setEmailUsuario(e.target.value)}
             required
             autoComplete="email"
             placeholder="usuario@agtech.uns.edu.ar"
-            style={{
-              padding: "0.5rem 0.75rem",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-              fontSize: "1rem",
-            }}
           />
-        </label>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>
-            Contraseña
-          </span>
-          <input
+          <Input
+            label="Contraseña"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
             placeholder="••••••••"
-            style={{
-              padding: "0.5rem 0.75rem",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-              fontSize: "1rem",
-            }}
           />
-        </label>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          style={{
-            padding: "0.6rem",
-            borderRadius: "4px",
-            border: "none",
-            background: isLoading ? "#aaa" : "#2c7be5",
-            color: "#fff",
-            fontSize: "1rem",
-            cursor: isLoading ? "not-allowed" : "pointer",
-            fontWeight: 600,
-          }}
-        >
-          {isLoading ? "Ingresando…" : "Ingresar"}
-        </button>
+          <Button type="submit" loading={isLoading}>
+            Ingresar
+          </Button>
+        </form>
 
         <Link
           href="/reset-password"
           style={{
+            display: "block",
             textAlign: "center",
             fontSize: "0.85rem",
             color: "#2c7be5",
             textDecoration: "none",
+            marginTop: "1rem",
           }}
         >
           ¿Olvidaste tu contraseña?
         </Link>
-      </form>
+      </Card>
     </main>
   );
 }

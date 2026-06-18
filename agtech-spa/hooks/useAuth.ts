@@ -27,6 +27,36 @@ interface AuthState {
   error: string | null;
 }
 
+const MOCK_ENABLED = process.env.NEXT_PUBLIC_MOCK_AUTH === "true";
+
+const MOCK_USER = {
+  email: "test@agtechuns.com",
+  password: "12345678",
+};
+
+function btoaSafe(s: string): string {
+  return btoa(s).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+
+function createMockToken() {
+  const header = { alg: "HS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    sub: "mock-user-001",
+    email: MOCK_USER.email,
+    role: "ADMIN",
+    name: "Usuario de Prueba",
+    iat: now,
+    exp: now + 86400,
+  };
+  const accessToken = [
+    btoaSafe(JSON.stringify(header)),
+    btoaSafe(JSON.stringify(payload)),
+    "mocksignature",
+  ].join(".");
+  return { accessToken, refreshToken: accessToken, expiresIn: 86400 };
+}
+
 export function useAuth() {
   const [state, setState] = useState<AuthState>({
     isLoading: false,
@@ -48,6 +78,18 @@ export function useAuth() {
 
   const login = useCallback(async (emailUsuario: string, password: string) => {
     setState({ isLoading: true, error: null });
+
+    if (MOCK_ENABLED) {
+      await new Promise((r) => setTimeout(r, 800));
+      if (emailUsuario === MOCK_USER.email && password === MOCK_USER.password) {
+        const tokens = createMockToken();
+        saveTokens(tokens.accessToken, tokens.refreshToken);
+        window.location.href = "/dashboard";
+        return;
+      }
+      setState({ isLoading: false, error: "CREDENTIALS_INVALID" });
+      return;
+    }
 
     try {
       const data = await api.post<LoginResponse>("/auth/login", {
@@ -73,7 +115,7 @@ export function useAuth() {
 
   // Renovación proactiva: dispara 10 segundos antes de que expire el token
   useEffect(() => {
-    if (!expiresAt) return;
+    if (!expiresAt || MOCK_ENABLED) return;
 
     const delay = (expiresAt - 10) - Math.floor(Date.now() / 1000);
     console.log("[Refresh] expiresAt:", expiresAt, "delay calculado:", delay, "segundos");
