@@ -303,7 +303,7 @@ async def confirm_password_reset(payload: ResetPasswordConfirm, db: AsyncSession
         raise ResetTokenInvalidException()
 
     # Verificar expiración
-    if usuario.reset_token_expiry is None or datetime.now(timezone.utc) > usuario.reset_token_expiry:
+    if usuario.reset_token_expiry is None or datetime.now(timezone.utc) > usuario.reset_token_expiry.replace(tzinfo=timezone.utc):
         raise ResetTokenInvalidException(details="El token de recuperación expiró.")
 
     # Actualizar contraseña e invalidar token

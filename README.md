@@ -47,7 +47,7 @@ Creado automáticamente al iniciar la aplicación (`startup` en `main.py`).
 | Campo          | Valor                    |
 | -------------- | ------------------------ |
 | Email          | `agronomo@agtech.com`    |
-| Contraseña     | `password123`            |
+| Contraseña     | `qwertyui`               |
 | Rol            | `agronomo`               |
 | Campo asignado | UUID generado en startup |
 
