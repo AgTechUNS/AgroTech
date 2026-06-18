@@ -1,4 +1,4 @@
-import { Campo, Cultivo, Parcela, Regla } from "@/lib/types";
+import { Campo, Cultivo, Parcela, Regla, Sensor } from "@/lib/types";
 
 export const SEED_CAMPOS: Campo[] = [
   {
@@ -56,4 +56,11 @@ export const SEED_REGLAS: Regla[] = [
   { metrica: "precipitacion", operador: "<", valor: 5.0 },
   { metrica: "viento", operador: ">=", valor: 50.0 },
   { metrica: "ndvi", operador: "<=", valor: 0.3 },
+];
+
+export const SEED_SENSORES: Sensor[] = [
+  { deviceId: "SNS-001", nombreCampo: "Campo Los Pinos", nombreParcela: "Lote A", tipo: "temperatura_humedad", activo: true },
+  { deviceId: "SNS-002", nombreCampo: "Campo Los Pinos", nombreParcela: "Lote B", tipo: "temperatura_humedad", activo: true },
+  { deviceId: "SNS-003", nombreCampo: "Campo Los Pinos", nombreParcela: "Lote A", tipo: "ph", activo: false },
+  { deviceId: "SNS-004", nombreCampo: "Campo El Ombú", nombreParcela: "Lote A", tipo: "temperatura_humedad", activo: true },
 ];

@@ -11,6 +11,7 @@ const NAV_ITEMS = [
     { label: "Cultivos", href: "/cultivos" },
     { label: "Reglas", href: "/reglas" },
     { label: "Usuarios", href: "/usuarios" },
+    { label: "Sensores", href: "/sensores" },
   ]},
   { label: "Analítica", href: "#", icon: "📈", sub: [
     { label: "Alertas", href: "/alertas" },

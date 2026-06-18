@@ -6,7 +6,8 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { listarCampos } from "@/lib/services/campos";
 import { listarParcelas } from "@/lib/services/parcelas";
-import { Campo, Parcela } from "@/lib/types";
+import { listarSensores } from "@/lib/services/sensores";
+import { Campo, Parcela, Sensor } from "@/lib/types";
 import { Card, Table, Button, Spinner } from "@/components/ui";
 
 const FieldsMap = dynamic(
@@ -20,6 +21,7 @@ export default function CampoDetallePage() {
   const nombreCampo = decodeURIComponent(params.nombreCampo as string);
   const [campo, setCampo] = useState<Campo | null>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
+  const [sensores, setSensores] = useState<Sensor[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,10 +31,12 @@ export default function CampoDetallePage() {
         res.data.find((c) => c.nombreCampo === nombreCampo) ?? null
       ),
       listarParcelas(nombreCampo).then((res) => res.data),
+      listarSensores(),
     ])
-      .then(([c, p]) => {
+      .then(([c, p, s]) => {
         setCampo(c);
         setParcelas(p);
+        setSensores(s.filter((sen) => sen.nombreCampo === nombreCampo));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -75,13 +79,41 @@ export default function CampoDetallePage() {
       <Card title={`Parcelas (${parcelas.length})`}>
         <Table
           columns={[
-            { header: "Parcela", accessor: (p: Parcela) => p.nombreParcela },
+            { header: "Parcela", accessor: (p: Parcela) => (
+              <Link href={`/campos/${encodeURIComponent(nombreCampo)}/${encodeURIComponent(p.nombreParcela)}`} style={{ color: "#2c7be5", textDecoration: "none" }}>
+                {p.nombreParcela}
+              </Link>
+            )},
             { header: "Cultivo", accessor: (p: Parcela) => p.nombreCultivo ?? "—" },
             { header: "Descripción", accessor: (p: Parcela) => p.descripcionParcela ?? "—" },
           ]}
           data={parcelas}
           keyExtractor={(p) => p.nombreParcela}
           emptyMessage="Este campo no tiene parcelas aún."
+        />
+      </Card>
+
+      <Card title={`Sensores (${sensores.length})`} style={{ marginTop: "1.5rem" }}>
+        <Table
+          columns={[
+            { header: "Device ID", accessor: (s: Sensor) => (
+              <Link href={`/campos/${encodeURIComponent(nombreCampo)}/${encodeURIComponent(s.nombreParcela)}`} style={{ color: "#2c7be5", textDecoration: "none", fontFamily: "monospace" }}>
+                {s.deviceId}
+              </Link>
+            )},
+            { header: "Parcela", accessor: (s: Sensor) => s.nombreParcela },
+            { header: "Tipo", accessor: (s: Sensor) => s.tipo === "temperatura_humedad" ? "Temp. / Humedad" : s.tipo === "ph" ? "pH" : s.tipo },
+            {
+              header: "Estado",
+              accessor: (s: Sensor) =>
+                s.activo
+                  ? <span style={{ color: "#16a34a", fontWeight: 600 }}>Activo</span>
+                  : <span style={{ color: "#94a3b8" }}>Inactivo</span>,
+            },
+          ]}
+          data={sensores}
+          keyExtractor={(s) => s.deviceId}
+          emptyMessage="No hay sensores en este campo. Configuralos desde el LNS Console."
         />
       </Card>
     </div>

@@ -70,9 +70,23 @@ export interface RegistroCultivo {
 }
 
 export interface Sensor {
-  nombreSensor: string;
-  tipo: string;
-  credencialesMqtt?: string;
+  deviceId: string;
+  nombreCampo: string;
+  nombreParcela: string;
+  tipo: "temperatura_humedad" | "ph" | "lluvia";
+  activo: boolean;
+}
+
+export interface Gateway {
+  gatewayId: string;
+  nombreCampo: string;
+}
+
+export interface Lectura {
+  sensorId: string;
+  timestamp: string;
+  temperatura: number | null;
+  humedad: number | null;
 }
 
 export interface LoginResponse {

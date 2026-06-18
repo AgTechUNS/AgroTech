@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AgTechUNS SPA
 
-## Getting Started
+Frontend de la Plataforma de Monitoreo Agrícola Inteligente. Construido con **Next.js 14** (App Router), **React 18** y **TypeScript**.
 
-First, run the development server:
+## Inicio Rápido
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrir [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Login
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Campo     | Valor                |
+|-----------|----------------------|
+| Email     | `test@agtechuns.com` |
+| Password  | `12345678`           |
 
-## Learn More
+Mock auth habilitado via `NEXT_PUBLIC_MOCK_AUTH=true` en `.env.local`.
 
-To learn more about Next.js, take a look at the following resources:
+## Módulos Implementados
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Módulo    | Rutas                                     | Descripción                                    |
+|-----------|-------------------------------------------|------------------------------------------------|
+| Campos    | `/campos`, `/campos/crear`, `/campos/[nombreCampo]` | CRUD con dibujo de polígonos en mapa Leaflet |
+| Cultivos  | `/cultivos`, `/cultivos/crear`            | Catálogo de cultivos                           |
+| Parcelas  | `/campos/[nombreCampo]/parcelas/crear`    | Asociadas a un campo con selección de cultivo |
+| Reglas    | `/reglas`, `/reglas/crear`                | Reglas con métrica/operador/valor              |
+| Dashboard | `/`                                       | Home con resumen (TODO)                        |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Arquitectura
 
-## Deploy on Vercel
+```
+Página → lib/services/ (fetch) → /api/* (Next.js API Route) → lib/data/store.ts → .data/*.json
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Las API Routes actúan como **BFF**. Cuando el Relational Repository esté disponible, swichearán a `BACKEND_URL`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Persistencia
+
+Los datos se almacenan en archivos JSON bajo `.data/` (gitignored). Se siembran con datos de ejemplo al primer acceso.
+
+## Tecnologías
+
+- **Next.js 14** — App Router, API Routes, SSR
+- **React 18** — Server/Client Components
+- **Leaflet + react-leaflet** — Mapas (OpenStreetMap, sin API key)
+- **leaflet-draw** — Dibujo de polígonos
+- **react-hook-form + zod** — Formularios y validación
+- **recharts** — Gráficos (dashboard futuro)
+
+## Variables de Entorno
+
+| Variable | Descripción |
+|----------|-------------|
+| `NEXT_PUBLIC_MOCK_AUTH` | `true` para mock de login |
+| `BACKEND_URL` | URL del backend (vacío = usa JSON store) |

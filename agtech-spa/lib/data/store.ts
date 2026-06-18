@@ -1,13 +1,14 @@
 import fs from "fs";
 import path from "path";
-import { Campo, Cultivo, Parcela, Regla } from "@/lib/types";
-import { SEED_CAMPOS, SEED_CULTIVOS, SEED_PARCELAS, SEED_REGLAS } from "./seed";
+import { Campo, Cultivo, Parcela, Regla, Sensor, Gateway } from "@/lib/types";
+import { SEED_CAMPOS, SEED_CULTIVOS, SEED_PARCELAS, SEED_REGLAS, SEED_SENSORES } from "./seed";
 
-const DATA_DIR = path.join(process.cwd(), ".data");
+const DATA_DIR = path.resolve(process.cwd(), "..", ".data");
 const CAMPOS_PATH = path.join(DATA_DIR, "campos.json");
 const CULTIVOS_PATH = path.join(DATA_DIR, "cultivos.json");
 const PARCELAS_PATH = path.join(DATA_DIR, "parcelas.json");
 const REGLAS_PATH = path.join(DATA_DIR, "reglas.json");
+const SENSORES_PATH = path.join(DATA_DIR, "sensores.json");
 
 function ensureDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -80,4 +81,43 @@ export function addRegla(regla: Regla): void {
   const reglas = readReglas();
   reglas.push(regla);
   writeFile(REGLAS_PATH, reglas);
+}
+
+// --- Sensores ---
+
+interface SensorStore {
+  gateways: Gateway[];
+  sensors: Sensor[];
+}
+
+function initSensorStore(): void {
+  ensureDir();
+  if (!fs.existsSync(SENSORES_PATH)) {
+    const seed: SensorStore = {
+      gateways: [],
+      sensors: SEED_SENSORES,
+    };
+    fs.writeFileSync(SENSORES_PATH, JSON.stringify(seed, null, 2), "utf-8");
+  }
+}
+
+export function readSensores(): SensorStore {
+  initSensorStore();
+  const raw = fs.readFileSync(SENSORES_PATH, "utf-8");
+  return JSON.parse(raw) as SensorStore;
+}
+
+export function writeSensores(store: SensorStore): void {
+  ensureDir();
+  fs.writeFileSync(SENSORES_PATH, JSON.stringify(store, null, 2), "utf-8");
+}
+
+export function readSensoresPorCampo(nombreCampo: string): Sensor[] {
+  return readSensores().sensors.filter((s) => s.nombreCampo === nombreCampo);
+}
+
+export function readSensoresPorParcela(nombreCampo: string, nombreParcela: string): Sensor[] {
+  return readSensores().sensors.filter(
+    (s) => s.nombreCampo === nombreCampo && s.nombreParcela === nombreParcela
+  );
 }
