@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 
 const ERROR_LABELS: Record<string, string> = {
@@ -124,6 +125,18 @@ export default function LoginPage() {
         >
           {isLoading ? "Ingresando…" : "Ingresar"}
         </button>
+
+        <Link
+          href="/reset-password"
+          style={{
+            textAlign: "center",
+            fontSize: "0.85rem",
+            color: "#2c7be5",
+            textDecoration: "none",
+          }}
+        >
+          ¿Olvidaste tu contraseña?
+        </Link>
       </form>
     </main>
   );
