@@ -22,7 +22,7 @@ AgroTech/
 │   │   │   ├── query_models.py         # TelemetryQuery (especificación de consulta)
 │   │   │   └── ports.py                # Puerto: TimeSeriesRepositoryInterface
 │   │   │
-│   │   ├── analitycs_engine/           # Componente: Analytics Engine (TODO)
+│   │   ├── analytics_engine/           # Componente: Analytics Engine (TODO)
 │   │   │
 │   │   ├── external_data_gateway/      # Componente: External Data Gateway
 │   │   │   ├── router.py               # Endpoints REST /external-data/*

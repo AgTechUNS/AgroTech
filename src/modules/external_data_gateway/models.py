@@ -36,3 +36,8 @@ class SatelliteResponse(BaseModel):
     ndmi: float = Field(..., ge=-1, le=1)
     date: UTCDatetime
     source: Literal["Google Earth Engine"]
+
+
+class SatelitalResponse(BaseModel):
+    ndvi: float = Field(..., ge=-1, le=1)
+    humedad_suelo_estimada: float = Field(..., ge=0, le=100)

@@ -1,0 +1,494 @@
+openapi: 3.0.3
+info:
+  title: API de AgTechUNS
+  version: 1.1.0
+  description: API REST para el sistema de monitoreo agrícola AgTechUNS. Incluye pipelines, alertas, catálogos y configuración.
+servers:
+  - url: https://api.agtechuns.com/v1
+
+paths:
+
+# ========================================================================
+# ────────────────────────── MÓDULO: CAMPOS ──────────────────────────────
+# ========================================================================
+
+  /campos:
+    get:
+      summary: Listar campos del usuario
+      tags:
+        - Campos
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Lista de campos obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Campo'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Token no enviado, inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Registrar un nuevo campo
+      tags:
+        - Campos
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombreCampo
+                - coordenadasCampo
+              properties:
+                nombreCampo:
+                  type: string
+                  example: "Campo Los Pinos"
+                descripcionCampo:
+                  type: string
+                  example: "Establecimiento norte destinado a cultivos rotativos"
+                coordenadasCampo:
+                  type: string
+                  description: "Polígono GeoJSON con los límites geográficos del campo"
+      responses:
+        '201':
+          description: Campo creado exitosamente
+          headers:
+            Location:
+              schema:
+                type: string
+              example: "/campos/Campo%20Los%20Pinos"
+        '401':
+          description: Token no enviado o expirado
+        '409':
+          description: Conflicto - El campo ya existe o las coordenadas se superponen
+
+# ========================================================================
+# ───────────────────────── MÓDULO: PARCELAS ─────────────────────────────
+# ========================================================================
+
+  /campos/{nombreCampo}/parcelas:
+    get:
+      summary: Listar parcelas de un campo
+      tags:
+        - Parcelas
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: nombreCampo
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de parcelas obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Parcela'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Registrar una nueva parcela
+      tags:
+        - Parcelas
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: nombreCampo
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombreParcela
+                - coordenadasParcela
+              properties:
+                nombreParcela:
+                  type: string
+                descripcionParcela:
+                  type: string
+                coordenadasParcela:
+                  type: string
+                nombreCultivo:
+                  type: string
+      responses:
+        '201':
+          description: Parcela registrada exitosamente
+
+# ========================================================================
+# ────────── MÓDULO: CONFIGURACIÓN (CULTIVOS, REGLAS, USUARIOS) ──────────
+# ========================================================================
+
+  /cultivos:
+    post:
+      summary: Crear un nuevo cultivo en el catálogo (CU-09)
+      description: Registra las constantes agronómicas necesarias para los pipelines analíticos.
+      tags:
+        - Catálogos y Configuración
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cultivo'
+      responses:
+        '201':
+          description: Cultivo registrado exitosamente
+          
+  /reglas:
+    post:
+      summary: Configurar nueva regla agroclimática (CU-07)
+      description: Define umbrales de evaluación para el pipeline de alertas tempranas.
+      tags:
+        - Catálogos y Configuración
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Regla'
+      responses:
+        '201':
+          description: Regla agroclimática registrada exitosamente
+
+  /usuarios:
+    post:
+      summary: Registrar usuario y asignar rol (CU-10 / CU-11)
+      description: Alta de usuarios en el sistema con su correspondiente rol de control de acceso.
+      tags:
+        - Catálogos y Configuración
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Usuario'
+      responses:
+        '201':
+          description: Usuario registrado exitosamente
+
+# ========================================================================
+# ──────────────────── MÓDULO: ANALÍTICA Y PREDICCIONES ──────────────────
+# ========================================================================
+
+  /campos/{nombreCampo}/parcelas/{nombreParcela}/recomendaciones:
+    get:
+      summary: Consultar alertas y recomendaciones agronómicas
+      description: Obtiene resultados combinados. Incluye tanto alertas históricas generadas en tiempo real (CU-05) como las recomendaciones en diferido por el Motor de Analítica Batch (CU-06). Revisar la propiedad 'tipo' en la respuesta para distinguir su origen.
+      tags: 
+        - Analítica
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: nombreCampo
+          required: true
+          schema: 
+            type: string
+        - in: path
+          name: nombreParcela
+          required: true
+          schema: 
+            type: string
+      responses:
+        '200':
+          description: Lista de alertas y recomendaciones obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AlertaRecomendacion'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /campos/{nombreCampo}/parcelas/{nombreParcela}/predicciones:
+    get:
+      summary: Visualizar predicciones a corto plazo
+      tags: 
+        - Analítica
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: nombreCampo
+          required: true
+          schema: 
+            type: string
+        - in: path
+          name: nombreParcela
+          required: true
+          schema: 
+            type: string
+      responses:
+        '200':
+          description: Predicciones obtenidas exitosamente
+
+# ========================================================================
+# ──────────────────── MÓDULO: EXTERNAL DATA GATEWAY ─────────────────────
+# ========================================================================
+
+  /external/satelital:
+    get:
+      summary: Obtener datos satelitales (Enriquecimiento Externo)
+      description: Endpoint de gateway utilizado por el Pipeline Analítico Batch (Paso 3) para consultar métricas desde Google Earth Engine.
+      tags:
+        - Integraciones Externas
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: coordenadas
+          required: true
+          schema:
+            type: string
+            description: Polígono o punto de consulta
+      responses:
+        '200':
+          description: Datos de telemetría satelital obtenidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ndvi:
+                    type: number
+                    example: 0.85
+                  humedad_suelo_estimada:
+                    type: number
+                    example: 45.2
+
+# ========================================================================
+# ────────────────────────── MÓDULO: AUTENTICACIÓN ───────────────────────
+# ========================================================================
+
+  /auth/login:
+    post:
+      summary: Iniciar sesión y obtener JWT
+      description: Valida credenciales del usuario contra el Relational Repository y emite el token temporal.
+      tags: 
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: 
+                - emailUsuario
+                - password
+              properties:
+                emailUsuario:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login exitoso, se devuelve el token JWT
+          
+  /auth/refresh:
+    post:
+      summary: Refrescar token JWT
+      description: Permite obtener un nuevo JWT utilizando un refresh token válido antes de que expire la sesión.
+      tags:
+        - Auth
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Nuevo token generado correctamente
+
+  /auth/logout:
+    post:
+      summary: Cerrar sesión
+      description: Invalida el token JWT actual del usuario.
+      tags:
+        - Auth
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Sesión cerrada exitosamente
+
+# ========================================================================
+# ───────── COMPONENTES REUTILIZABLES (Esquemas y Seguridad) ─────────────
+# ========================================================================
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: string
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+
+    Campo:
+      type: object
+      properties:
+        nombreCampo:
+          type: string
+        descripcionCampo:
+          type: string
+        coordenadasCampo:
+          type: string
+
+    Parcela:
+      type: object
+      properties:
+        nombreParcela:
+          type: string
+        nombreCampo:
+          type: string
+        nombreCultivo:
+          type: string
+          nullable: true
+        coordenadasParcela:
+          type: string
+
+    Cultivo:
+      type: object
+      required:
+        - nombreCultivo
+        - umbralHumedadMinima
+      properties:
+        nombreCultivo:
+          type: string
+          example: "Trigo"
+        umbralHumedadMinima:
+          type: number
+          description: "Constante agronómica requerida por el pipeline batch"
+          example: 30.5
+
+    Regla:
+      type: object
+      required:
+        - metrica
+        - operador
+        - valor
+      properties:
+        metrica:
+          type: string
+          example: "temperatura"
+        operador:
+          type: string
+          example: ">="
+        valor:
+          type: number
+          example: 38.0
+
+    Usuario:
+      type: object
+      required:
+        - email
+        - rol
+      properties:
+        email:
+          type: string
+          format: email
+          example: "agronomo@agtechuns.com"
+        rol:
+          type: string
+          enum: [ADMIN, AGRONOMO, PRODUCTOR]
+          example: "AGRONOMO"
+
+    AlertaRecomendacion:
+      type: object
+      required:
+        - tipo
+        - fechaEmision
+        - mensaje
+        - nombreParcela
+      properties:
+        tipo:
+          type: string
+          enum: [ALERTA_TIEMPO_REAL, RECOMENDACION_BATCH]
+          description: "Distingue si el ítem es una alerta de tiempo real (CU-05) o una recomendación analítica batch (CU-06)"
+          example: "ALERTA_TIEMPO_REAL"
+        fechaEmision: 
+          type: string
+          format: date-time
+        mensaje: 
+          type: string
+          example: "Riesgo de estrés hídrico detectado por baja humedad sostenida."
+        nombreParcela: 
+          type: string
+        emailUsuario:
+          type: string
+          format: email

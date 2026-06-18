@@ -135,3 +135,26 @@ async def fetch_satellite_indices(
         date=datetime.fromtimestamp(epoch_ms / 1000, tz=timezone.utc),
         source="Google Earth Engine",
     )
+
+
+def _ndmi_a_humedad_suelo(ndmi: float) -> float:
+    return round((ndmi + 1) * 50, 2)
+
+
+def parsear_coordenadas(coordenadas: str) -> tuple[float, float]:
+    data = json.loads(coordenadas)
+    geom_type = data.get("type", "")
+    coords = data.get("coordinates", [])
+
+    if geom_type == "Point":
+        lon, lat = coords
+        return lat, lon
+
+    if geom_type == "Polygon":
+        todas_lon = [c[0] for ring in coords for c in ring]
+        todas_lat = [c[1] for ring in coords for c in ring]
+        lat = sum(todas_lat) / len(todas_lat)
+        lon = sum(todas_lon) / len(todas_lon)
+        return lat, lon
+
+    raise ValueError(f"Tipo de geometría no soportado: {geom_type}")
