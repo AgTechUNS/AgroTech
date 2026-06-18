@@ -6,3 +6,5 @@ earthengine-api>=1.0.0,<2
 python-dotenv>=1.0.0,<2
 paho-mqtt>=2.0.0,<3
 influxdb-client>=1.40.0,<2
+sqlalchemy[asyncio]>=2.0.0,<3
+asyncpg>=0.29.0,<1

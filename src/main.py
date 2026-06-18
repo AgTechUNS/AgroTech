@@ -4,6 +4,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from core.config import settings
+from infrastructure.relational_repo.adapter import SQLAlchemyRelationalRepository
+from infrastructure.relational_repo.database import Database
 from infrastructure.time_series_repo.influx_client import TimeSeriesRepository
 from modules.analytics_engine.router import router as analytics_router
 from modules.analytics_engine.tasks import run_batch_diario
@@ -26,6 +29,16 @@ async def lifespan(app: FastAPI):
 
     app.state.time_series_repo = repo
 
+    db: Database | None = None
+    try:
+        db = Database(dsn=settings.database_dsn, echo=settings.database_echo)
+        await db.create_tables()
+        app.state.relational_repo = SQLAlchemyRelationalRepository(db)
+        logger.info("Base de datos relacional conectada exitosamente")
+    except Exception as e:
+        logger.warning("Base de datos relacional no disponible: %s", e)
+        app.state.relational_repo = None
+
     async def _ejecutar_batch_diario():
         while True:
             await asyncio.sleep(86400)
@@ -45,6 +58,8 @@ async def lifespan(app: FastAPI):
         _tarea_batch.cancel()
     if repo is not None:
         await repo.cerrar_conexion()
+    if db is not None:
+        await db.close()
 
 
 app = FastAPI(
