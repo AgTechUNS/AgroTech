@@ -6,3 +6,11 @@ earthengine-api>=1.0.0,<2
 python-dotenv>=1.0.0,<2
 paho-mqtt>=2.0.0,<3
 influxdb-client>=1.40.0,<2
+# Auth & Security Controller
+sqlalchemy[asyncio]>=2.0,<3       # ORM exclusivo del Auth Controller (tabla usuarios)
+aiosqlite>=0.20.0,<1              # Driver SQLite async (solo desarrollo local, reemplazar por asyncpg en prod)
+passlib[bcrypt]>=1.7,<2           # Hashing de contraseñas con bcrypt
+python-jose[cryptography]>=3.0,<4 # Firma y verificación de JWT (HS256/RS256)
+slowapi>=0.1.9,<1                 # Rate limiting por IP sobre FastAPI
+pydantic-settings>=2.0,<3         # Carga de configuración desde .env con tipado
+# hvac>=2.0,<3                    # Cliente HashiCorp Vault — solo producción, comentar en desarrollo local

@@ -16,21 +16,38 @@ src/
 │   └── config.py
 │
 ├── modules/                        # MÓDULOS DE NEGOCIO (Dominio)
+│   ├── auth/                       # Componente: Authentication Controller
+│   │   ├── router.py               # Endpoints POST /auth/login, /refresh, /reset-*
+│   │   ├── service.py              # Lógica: login, refresh, reset de contraseña
+│   │   ├── models.py               # ORM SQLAlchemy: Usuario, UsuarioRolCampo
+│   │   ├── schemas.py              # Pydantic: LoginRequest, TokenResponse, BaseSchema…
+│   │   └── dependencies.py         # get_db(): sesión AsyncSession por request
+│   │
+│   ├── security/                   # Componente: Security Controller
+│   │   ├── get_current_user.py     # Dependencia FastAPI: extrae y valida el JWT
+│   │   ├── roles.py                # RBAC: require_role(), verify_field_access()
+│   │   ├── token_service.py        # JWT: create_access_token/refresh, decode_token
+│   │   ├── schemas.py              # UserContext (contexto del usuario autenticado)
+│   │   └── core/                   # Núcleo interno del componente
+│   │       ├── config.py           # Settings (SECRET_KEY, algoritmo, TTLs)
+│   │       ├── enums.py            # RoleEnum: ADMINISTRADOR, AGRONOMO
+│   │       ├── exceptions.py       # Excepciones de negocio + handlers globales
+│   │       ├── hashing.py          # bcrypt: hash_password, verify_password
+│   │       └── limiter.py          # Instancia slowapi (rate limiting)
+│   │
 │   ├── iot_ingestion/              # Componente: IoT Ingestion
 │   │   ├── mqtt_subscriber.py      # Suscriptor MQTT + dedup + workers
 │   │   ├── schemas.py              # LecturaNormalizada (modelo de dominio)
 │   │   ├── query_models.py         # TelemetryQuery (especificación de consulta)
 │   │   └── ports.py                # Puerto: TimeSeriesRepositoryInterface
 │   │
-│   ├── analytics_engine/           # Componente: Analytics Engine (TODO)
+│   ├── analytics_engine/           # Componente: Analytics Engine
 │   │
-│   ├── external_data_gateway/      # Componente: External Data Gateway
-│   │   ├── router.py               # Endpoints REST /external-data/*
-│   │   ├── gateway.py              # Clientes Open-Meteo y Google Earth Engine
-│   │   ├── models.py               # Pydantic models
-│   │   └── integration_example.py
-│   │
-│   └── security/                   # Componente: Security Controller (TODO)
+│   └── external_data_gateway/      # Componente: External Data Gateway
+│       ├── router.py               # Endpoints REST /external-data/*
+│       ├── gateway.py              # Clientes Open-Meteo y Google Earth Engine
+│       ├── models.py               # Pydantic models
+│       └── integration_example.py
 │
 └── infrastructure/                 # CAPA DE INFRAESTRUCTURA Y PERSISTENCIA
     ├── time_series_repo/           # Componente: Time Series Repository
