@@ -1,4 +1,3 @@
-# notification_component/_contracts.py
 """
 Contratos públicos del Notification Component.
 
