@@ -14,8 +14,9 @@ import os
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
-_ALERT_EMAIL = os.environ.get("ALERT_EMAIL", "admin@agtech.com")
-_FROM_EMAIL = os.environ.get("SENDGRID_FROM", "alertas@agtech.com")
+_SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+_ALERT_EMAIL = os.getenv("ALERT_EMAIL", "admin@agtech.com")
+_FROM_EMAIL = os.getenv("SENDGRID_FROM", "alertas@agtech.com")
 
 
 async def send_email(message: str, subject: str) -> None:
@@ -26,8 +27,10 @@ async def send_email(message: str, subject: str) -> None:
     por eso se ejecuta en un thread pool con asyncio.to_thread para no
     bloquear el event loop mientras espera la respuesta HTTP.
     """
-    api_key = os.environ["SENDGRID_API_KEY"]
-    client = SendGridAPIClient(api_key)
+    if not _SENDGRID_API_KEY:
+        raise ValueError("SENDGRID_API_KEY no está configurada")
+    
+    client = SendGridAPIClient(_SENDGRID_API_KEY)
 
     mail = Mail(
         from_email=_FROM_EMAIL,

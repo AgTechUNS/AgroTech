@@ -15,7 +15,7 @@ Ningún otro módulo del paquete decide este orden — vive solo acá.
 
 import asyncio
 
-from ._audit import log_notification
+#from ._audit import log_notification
 from ._config import EMAIL, IN_APP, SMS, get_config
 from ._contracts import NotificationJob
 from ._deduplication import is_duplicate
@@ -51,12 +51,12 @@ async def notify(job: NotificationJob) -> None:
         (SMS, "twilio"),
     ]
 
-    for result, (channel, provider) in zip(results, channel_providers):
-        failed = isinstance(result, Exception)
-        await log_notification(
-            job=job,
-            channel=channel,
-            status="FAILED" if failed else "SENT",
-            provider=provider,
-            error=str(result) if failed else None,
-        )
+    #for result, (channel, provider) in zip(results, channel_providers):
+       #failed = isinstance(result, Exception)
+        # await log_notification(
+        #     job=job,
+        #     channel=channel,
+        #     status="FAILED" if failed else "SENT",
+        #     provider=provider,
+        #     error=str(result) if failed else None,
+        # )
