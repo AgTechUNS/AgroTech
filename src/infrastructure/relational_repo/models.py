@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+﻿from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import (
@@ -37,7 +37,7 @@ class Campo(Base):
     __tablename__ = "campo"
 
     nombre_campo: Mapped[str] = mapped_column(String(255), primary_key=True)
-    coordenadas_campo: Mapped[str] = mapped_column(Text, nullable=False, comment="Polígono GeoJSON")
+    coordenadas_campo: Mapped[str] = mapped_column(Text, nullable=False, comment="Poligono GeoJSON")
     descripcion_campo: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     def __repr__(self):
@@ -88,7 +88,7 @@ class ImagenSatelital(Base):
 class EjecucionBatch(Base):
     __tablename__ = "ejecucion_batch"
 
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    fecha_ini: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
     estado: Mapped[str] = mapped_column(String(50), nullable=False, comment="EN_CURSO, COMPLETADO, FALLIDO")
     fecha_fin: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -100,7 +100,7 @@ class Parcela(Base):
     __tablename__ = "parcela"
 
     nombre_parcela: Mapped[str] = mapped_column(String(255), primary_key=True)
-    coordenadas_parcela: Mapped[str] = mapped_column(Text, nullable=False, comment="Polígono GeoJSON")
+    coordenadas_parcela: Mapped[str] = mapped_column(Text, nullable=False, comment="Poligono GeoJSON")
     descripcion_parcela: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     nombre_campo: Mapped[str] = mapped_column(String(255), ForeignKey("campo.nombre_campo"), nullable=False)
 
@@ -115,7 +115,7 @@ class Regla(Base):
 
     nombre_regla: Mapped[str] = mapped_column(String(255), primary_key=True)
     nombre_campo: Mapped[str] = mapped_column(String(255), primary_key=True)
-    formula: Mapped[str] = mapped_column(Text, nullable=False, comment="Expresión de la regla agroclimática")
+    formula: Mapped[str] = mapped_column(Text, nullable=False, comment="Expresion de la regla agroclim├ítica")
     descripcion_regla: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     umbral: Mapped[float] = mapped_column(Float, nullable=False)
 
@@ -143,8 +143,8 @@ class VentanaTemporal(Base):
 class Alerta(Base):
     __tablename__ = "alerta"
 
-
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    fecha_emision: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     mensaje: Mapped[str] = mapped_column(Text, nullable=False)
     nombre_parcela: Mapped[str] = mapped_column(String(255), ForeignKey("parcela.nombre_parcela"), nullable=False)
     email_usuario: Mapped[str] = mapped_column(String(255), ForeignKey("usuario.email_usuario"), nullable=False)
@@ -220,8 +220,9 @@ class SensorParcela(Base):
 
 class Prediccion(Base):
     __tablename__ = "prediccion"
-    
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    fecha_emision: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     resultado: Mapped[str] = mapped_column(Text, nullable=False)
     fecha_ini: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     fecha_fin: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
