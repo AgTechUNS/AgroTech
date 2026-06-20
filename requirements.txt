@@ -6,6 +6,9 @@ earthengine-api>=1.0.0,<2
 python-dotenv>=1.0.0,<2
 paho-mqtt>=2.0.0,<3
 influxdb-client>=1.40.0,<2
+redis>=4.2.0
+sendgrid>=6.10.0,<7
+twilio>=8.0.0,<9
 # Auth & Security Controller
 sqlalchemy[asyncio]>=2.0,<3       # ORM exclusivo del Auth Controller (tabla usuarios)
 aiosqlite>=0.20.0,<1              # Driver SQLite async (solo desarrollo local, reemplazar por asyncpg en prod)
