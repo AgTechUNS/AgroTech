@@ -258,6 +258,64 @@ class RelationalRepository:
             result = await session.execute(select(models.Regla).order_by(models.Regla.nombre_regla))
             return list(result.scalars().all())
 
+    async def get_regla_by_nombre_and_campo(self, nombre_regla: str, nombre_campo: str) -> Optional[models.Regla]:
+        async with self._session_factory() as session:
+            result = await session.execute(
+                select(models.Regla).where(
+                    and_(
+                        models.Regla.nombre_regla == nombre_regla,
+                        models.Regla.nombre_campo == nombre_campo,
+                    )
+                )
+            )
+            return result.scalar_one_or_none()
+
+    async def update_regla(
+        self, nombre_regla: str, nombre_campo: str, *,
+        formula: str | None = None, umbral: float | None = None,
+        descripcion: str | None = None,
+    ) -> Optional[models.Regla]:
+        async with self._session_factory() as session:
+            result = await session.execute(
+                select(models.Regla).where(
+                    and_(
+                        models.Regla.nombre_regla == nombre_regla,
+                        models.Regla.nombre_campo == nombre_campo,
+                    )
+                )
+            )
+            regla = result.scalar_one_or_none()
+            if regla is None:
+                logger.warning("Regla no encontrada: %s / %s", nombre_regla, nombre_campo)
+                return None
+            if formula is not None:
+                regla.formula = formula
+            if umbral is not None:
+                regla.umbral = umbral
+            if descripcion is not None:
+                regla.descripcion_regla = descripcion
+            await self._commit(session, regla)
+            logger.info("Regla actualizada: %s en campo %s", nombre_regla, nombre_campo)
+            return regla
+
+    async def delete_regla(self, nombre_regla: str, nombre_campo: str) -> bool:
+        async with self._session_factory() as session:
+            result = await session.execute(
+                select(models.Regla).where(
+                    and_(
+                        models.Regla.nombre_regla == nombre_regla,
+                        models.Regla.nombre_campo == nombre_campo,
+                    )
+                )
+            )
+            regla = result.scalar_one_or_none()
+            if regla is None:
+                return False
+            await session.delete(regla)
+            await session.commit()
+            logger.info("Regla eliminada: %s en campo %s", nombre_regla, nombre_campo)
+            return True
+
     # ── Ventana Temporal ──────────────────────────────────────
 
     async def create_ventana_temporal(self, fecha_ini: datetime, fecha_fin: datetime, nombre_parcela: str) -> models.VentanaTemporal:
@@ -314,7 +372,7 @@ class RelationalRepository:
 
     # ── Predicciones ──────────────────────────────────────────
 
-    async def create_prediccion(self, fecha_emision: datetime, resultado: str, fecha_ini: datetime, fecha_fin: datetime, nombre_regla: str, nombre_campo: str) -> models.Prediccion:
+    async def create_prediccion(self, fecha_emision: datetime, resultado: str, fecha_ini: datetime, fecha_fin: datetime, nombre_campo: str, nombre_regla: str | None = None) -> models.Prediccion:
         p = models.Prediccion(fecha_emision=fecha_emision, resultado=resultado, fecha_ini=fecha_ini, fecha_fin=fecha_fin, nombre_regla=nombre_regla, nombre_campo=nombre_campo)
         async with self._session_factory() as session:
             session.add(p)

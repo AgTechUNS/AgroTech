@@ -178,10 +178,10 @@ paths:
         '201':
           description: Cultivo registrado exitosamente
           
-  /reglas:
+  /campos/reglas:
     post:
       summary: Configurar nueva regla agroclimática (CU-07)
-      description: Define umbrales de evaluación para el pipeline de alertas tempranas.
+      description: Define umbrales de evaluación para el pipeline de alertas tempranas en un campo específico.
       tags:
         - Catálogos y Configuración
       security:
@@ -191,10 +191,100 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Regla'
+              $ref: '#/components/schemas/ReglaRequest'
       responses:
         '201':
           description: Regla agroclimática registrada exitosamente
+        '401':
+          description: Token no enviado, inválido o expirado
+
+  /campos/{nombreCampo}/reglas:
+    get:
+      summary: Listar reglas agroclimáticas de un campo
+      description: Obtiene todas las reglas configuradas para un campo específico.
+      tags:
+        - Catálogos y Configuración
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: nombreCampo
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de reglas obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReglaResponse'
+        '401':
+          description: Token no enviado, inválido o expirado
+
+  /campos/reglas/{nombreRegla}:
+    put:
+      summary: Actualizar una regla agroclimática
+      description: Modifica los parámetros de una regla existente (métrica, operador, valor, descripción).
+      tags:
+        - Catálogos y Configuración
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: nombreRegla
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: nombreCampo
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReglaUpdateRequest'
+      responses:
+        '200':
+          description: Regla actualizada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReglaResponse'
+        '401':
+          description: Token no enviado, inválido o expirado
+        '404':
+          description: Regla no encontrada
+    delete:
+      summary: Eliminar una regla agroclimática
+      description: Borra una regla existente del sistema.
+      tags:
+        - Catálogos y Configuración
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: nombreRegla
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: nombreCampo
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Regla eliminada exitosamente
+        '401':
+          description: Token no enviado, inválido o expirado
+        '404':
+          description: Regla no encontrada
 
   /usuarios:
     post:
@@ -469,13 +559,21 @@ components:
           description: "Constante agronómica requerida por el pipeline batch"
           example: 30.5
 
-    Regla:
+    ReglaRequest:
       type: object
       required:
+        - nombre_regla
+        - nombre_campo
         - metrica
         - operador
         - valor
       properties:
+        nombre_regla:
+          type: string
+          example: "regla_sequia"
+        nombre_campo:
+          type: string
+          example: "Campo Los Pinos"
         metrica:
           type: string
           example: "temperatura"
@@ -485,6 +583,42 @@ components:
         valor:
           type: number
           example: 38.0
+        descripcion:
+          type: string
+          example: "Alerta por alta temperatura"
+
+    ReglaResponse:
+      type: object
+      properties:
+        nombre_regla:
+          type: string
+        nombre_campo:
+          type: string
+        metrica:
+          type: string
+        operador:
+          type: string
+        valor:
+          type: number
+        descripcion:
+          type: string
+          nullable: true
+
+    ReglaUpdateRequest:
+      type: object
+      properties:
+        metrica:
+          type: string
+          example: "temperatura"
+        operador:
+          type: string
+          example: ">="
+        valor:
+          type: number
+          example: 40.0
+        descripcion:
+          type: string
+          example: "Umbral ajustado por ola de calor"
 
     Usuario:
       type: object

@@ -223,19 +223,8 @@ class Prediccion(Base):
     resultado: Mapped[str] = mapped_column(Text, nullable=False)
     fecha_ini: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     fecha_fin: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    nombre_regla: Mapped[str] = mapped_column(String(255), nullable=False)
+    nombre_regla: Mapped[str | None] = mapped_column(String(255), nullable=True)
     nombre_campo: Mapped[str] = mapped_column(String(255), nullable=False)
-
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["nombre_regla", "nombre_campo"],
-            ["regla.nombre_regla", "regla.nombre_campo"],
-        ),
-        ForeignKeyConstraint(
-            ["fecha_ini", "fecha_fin"],
-            ["ventana_temporal.fecha_ini", "ventana_temporal.fecha_fin"],
-        ),
-    )
 
     def __repr__(self):
         return f"<Prediccion #{self.id} campo={self.nombre_campo!r}>"

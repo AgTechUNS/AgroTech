@@ -93,3 +93,10 @@ class ReglaResponse(BaseModel):
     operador: str
     valor: float
     descripcion: str | None = None
+
+
+class ReglaUpdateRequest(BaseModel):
+    metrica: str | None = None
+    operador: str | None = None
+    valor: float | None = None
+    descripcion: str | None = None

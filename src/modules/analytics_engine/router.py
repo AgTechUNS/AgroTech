@@ -18,6 +18,7 @@ from modules.analytics_engine.models import (
     RecomendacionesResponse,
     ReglaRequest,
     ReglaResponse,
+    ReglaUpdateRequest,
 )
 from modules.external_data_gateway.gateway import (
     fetch_satellite_indices,
@@ -25,6 +26,8 @@ from modules.external_data_gateway.gateway import (
 )
 from modules.iot_ingestion.query_models import TelemetryQuery
 from modules.notification_component import notify, NotificationJob
+from modules.security.get_current_user import get_current_user
+from modules.security.schemas import UserContext
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/campos", tags=["Analítica"])
@@ -67,15 +70,72 @@ async def consultar_recomendaciones(
     umbral_temperatura: float = Query(
         38.0, description="Umbral máximo de temperatura (°C)"
     ),
+    nombre_regla_humedad: str | None = Query(
+        None, description="Nombre de regla en DB para umbral de humedad (sobrescribe umbral_humedad)"
+    ),
+    nombre_regla_temperatura: str | None = Query(
+        None, description="Nombre de regla en DB para umbral de temperatura (sobrescribe umbral_temperatura)"
+    ),
     ventana_minutos: int = Query(
         60, ge=1, le=1440, description="Ventana de tiempo en minutos"
     ),
+    modo: str = Query("tiempo_real", description="Modo de consulta: 'tiempo_real' o 'historico'"),
     page: int = Query(1, ge=1, description="Número de página"),
     limit: int = Query(20, ge=1, le=100, description="Elementos por página"),
     repo: TimeSeriesRepository | None = Depends(_obtener_repo),
     relational_repo: RelationalRepository | None = Depends(_obtener_relational_repo),
+    user: UserContext = Depends(get_current_user),
 ):
+    if modo == "historico":
+        if relational_repo is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Base de datos relacional no disponible para modo histórico.",
+            )
+        alertas_db, total = await relational_repo.list_alertas_by_parcela(
+            nombreParcela, page=page, limit=limit
+        )
+        data = [
+            AlertaRecomendacion(
+                tipo="RECOMENDACION_BATCH",
+                mensaje=a.mensaje,
+                fechaEmision=a.fecha_emision,
+                nombreParcela=a.nombre_parcela,
+            )
+            for a in alertas_db
+        ]
+        total_pages = max(1, (total + limit - 1) // limit)
+        return RecomendacionesResponse(
+            data=data,
+            pagination=Paginacion(
+                page=page,
+                limit=limit,
+                total=total,
+                totalPages=total_pages,
+            ),
+        )
+
     repo = _verificar_repo(repo)
+    if relational_repo is not None:
+        if nombre_regla_humedad is not None:
+            regla_humedad = await relational_repo.get_regla_by_nombre_and_campo(
+                nombre_regla_humedad, nombreCampo
+            )
+            if regla_humedad is not None:
+                umbral_humedad = regla_humedad.umbral
+                logger.info(
+                    "Umbral humedad desde regla '%s': %.1f", nombre_regla_humedad, umbral_humedad
+                )
+        if nombre_regla_temperatura is not None:
+            regla_temperatura = await relational_repo.get_regla_by_nombre_and_campo(
+                nombre_regla_temperatura, nombreCampo
+            )
+            if regla_temperatura is not None:
+                umbral_temperatura = regla_temperatura.umbral
+                logger.info(
+                    "Umbral temperatura desde regla '%s': %.1f", nombre_regla_temperatura, umbral_temperatura
+                )
+
     query = TelemetryQuery(
         campos=[nombreCampo],
         parcelas=[nombreParcela],
@@ -167,6 +227,8 @@ async def consultar_predicciones(
         description="Longitud para enriquecer con datos externos",
     ),
     repo: TimeSeriesRepository | None = Depends(_obtener_repo),
+    relational_repo: RelationalRepository | None = Depends(_obtener_relational_repo),
+    user: UserContext = Depends(get_current_user),
 ):
     repo = _verificar_repo(repo)
     ahora = datetime.now(timezone.utc)
@@ -202,6 +264,17 @@ async def consultar_predicciones(
         temperatura_externa=temperatura_externa,
         humedad_externa=humedad_externa,
     )
+    if relational_repo is not None:
+        try:
+            await relational_repo.create_prediccion(
+                fecha_emision=prediccion.fechaEmision,
+                resultado=prediccion.resultado,
+                fecha_ini=prediccion.fechaIni,
+                fecha_fin=prediccion.fechaFin,
+                nombre_campo=nombreCampo,
+            )
+        except Exception:
+            logger.warning("Prediccion no persistida para %s/%s", nombreCampo, nombreParcela, exc_info=True)
     data = [prediccion]
     return PrediccionesResponse(
         data=data,
@@ -223,6 +296,7 @@ async def consultar_predicciones(
 async def crear_regla(
     body: ReglaRequest,
     relational_repo: RelationalRepository | None = Depends(_obtener_relational_repo),
+    user: UserContext = Depends(get_current_user),
 ) -> ReglaResponse:
     repo = _verificar_relational_repo(relational_repo)
     regla = await repo.create_regla(
@@ -247,6 +321,7 @@ async def crear_regla(
 async def listar_reglas_campo(
     nombreCampo: str,
     relational_repo: RelationalRepository | None = Depends(_obtener_relational_repo),
+    user: UserContext = Depends(get_current_user),
 ) -> list[ReglaResponse]:
     repo = _verificar_relational_repo(relational_repo)
     reglas = await repo.list_reglas_by_campo(nombreCampo)
@@ -260,4 +335,62 @@ async def listar_reglas_campo(
             descripcion=r.descripcion_regla,
         )
         for r in reglas
+    ]
+
+
+@router.put("/reglas/{nombre_regla}")
+async def actualizar_regla(
+    nombre_regla: str,
+    body: ReglaUpdateRequest,
+    nombre_campo: str = Query(..., description="Nombre del campo al que pertenece la regla"),
+    relational_repo: RelationalRepository | None = Depends(_obtener_relational_repo),
+    user: UserContext = Depends(get_current_user),
+) -> ReglaResponse:
+    repo = _verificar_relational_repo(relational_repo)
+    formula = None
+    if body.metrica is not None or body.operador is not None:
+        metrica = body.metrica or ""
+        operador = body.operador or ""
+        if body.metrica is not None and body.operador is not None:
+            formula = f"{body.metrica} {body.operador}"
+        elif body.metrica is not None:
+            formula = body.metrica
+        elif body.operador is not None:
+            formula = operador
+    regla = await repo.update_regla(
+        nombre_regla=nombre_regla,
+        nombre_campo=nombre_campo,
+        formula=formula,
+        umbral=body.valor,
+        descripcion=body.descripcion,
+    )
+    if regla is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Regla '{nombre_regla}' no encontrada en campo '{nombre_campo}'.",
+        )
+    return ReglaResponse(
+        nombre_regla=regla.nombre_regla,
+        nombre_campo=regla.nombre_campo,
+        metrica=regla.formula.split()[0] if " " in regla.formula else regla.formula,
+        operador=regla.formula.split()[1] if len(regla.formula.split()) > 1 else "",
+        valor=regla.umbral,
+        descripcion=regla.descripcion_regla,
+    )
+
+
+@router.delete("/reglas/{nombre_regla}", status_code=status.HTTP_204_NO_CONTENT)
+async def eliminar_regla(
+    nombre_regla: str,
+    nombre_campo: str = Query(..., description="Nombre del campo al que pertenece la regla"),
+    relational_repo: RelationalRepository | None = Depends(_obtener_relational_repo),
+    user: UserContext = Depends(get_current_user),
+):
+    repo = _verificar_relational_repo(relational_repo)
+    eliminado = await repo.delete_regla(nombre_regla=nombre_regla, nombre_campo=nombre_campo)
+    if not eliminado:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Regla '{nombre_regla}' no encontrada en campo '{nombre_campo}'.",
+        )
     ]
