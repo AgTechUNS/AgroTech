@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Campo, Parcela, Sensor } from "@/lib/types";
+import { useTheme } from "@/contexts/ThemeContext";
+import { TILE_LIGHT, TILE_DARK, TILE_ATTR } from "./tiles";
 
 interface FieldsMapProps {
   fields?: Campo[];
@@ -37,10 +39,11 @@ function FitBounds({ items, getCoords }: { items: unknown[]; getCoords: (item: u
   return null;
 }
 
-const FIELD_COLORS = ["#2c7be5", "#27ae60", "#e67e22", "#8e44ad", "#c0392b", "#16a085"];
-const PARCEL_COLORS = ["#e74c3c", "#f39c12", "#9b59b6", "#1abc9c", "#e67e22"];
+const FIELD_COLORS = ["#60a5fa", "#34d399", "#fbbf24", "#a78bfa", "#f87171", "#2dd4bf"];
+const PARCEL_COLORS = ["#f87171", "#fb923c", "#c084fc", "#2dd4bf", "#fbbf24"];
 
 export function FieldsMap({ fields, parcels, sensores, height = 400 }: FieldsMapProps) {
+  const { theme } = useTheme();
   const hasData = (fields && fields.length > 0) || (parcels && parcels.length > 0);
   if (!hasData) return null;
 
@@ -65,10 +68,10 @@ export function FieldsMap({ fields, parcels, sensores, height = 400 }: FieldsMap
         const sensorCount = sensoresByCampo[f.nombreCampo];
         let tooltip = `<b>${f.nombreCampo}</b>`;
         if (f.descripcionCampo) tooltip += `<br/>${f.descripcionCampo}`;
-        tooltip += `<br/><span style="font-size:0.85rem;color:#555;">Parcelas: ${parcelCount ?? "—"} | Sensores: ${sensorCount ?? "—"}</span>`;
+        tooltip += `<br/><span style="font-size:0.85rem;color:#94a3b8;">Parcelas: ${parcelCount ?? "—"} | Sensores: ${sensorCount ?? "—"}</span>`;
         allItems.push({
           geo,
-          style: { color: FIELD_COLORS[i % FIELD_COLORS.length], weight: 2, fillOpacity: 0.1 },
+          style: { color: FIELD_COLORS[i % FIELD_COLORS.length], weight: 2, fillOpacity: 0.12 },
           tooltip,
         });
         allCoords.push({ geoStr: f.coordenadasCampo });
@@ -82,10 +85,10 @@ export function FieldsMap({ fields, parcels, sensores, height = 400 }: FieldsMap
         const geo = JSON.parse(p.coordenadasParcela);
         let tooltip = `<b>${p.nombreParcela}</b>`;
         if (p.nombreCultivo) tooltip += `<br/>${p.nombreCultivo}${p.variedad ? ` — ${p.variedad}` : ""}`;
-        if (p.descripcionParcela) tooltip += `<br/><span style="font-size:0.85rem;color:#555;">${p.descripcionParcela}</span>`;
+        if (p.descripcionParcela) tooltip += `<br/><span style="font-size:0.85rem;color:#94a3b8;">${p.descripcionParcela}</span>`;
         allItems.push({
           geo,
-          style: { color: PARCEL_COLORS[i % PARCEL_COLORS.length], weight: 3, fillOpacity: 0.25 },
+          style: { color: PARCEL_COLORS[i % PARCEL_COLORS.length], weight: 3, fillOpacity: 0.2 },
           tooltip,
         });
         allCoords.push({ geoStr: p.coordenadasParcela });
@@ -94,7 +97,7 @@ export function FieldsMap({ fields, parcels, sensores, height = 400 }: FieldsMap
   }
 
   return (
-    <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid #e2e8f0" }}>
+    <div style={{ borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid var(--border)" }}>
       <MapContainer
         center={[-38.0, -62.5]}
         zoom={6}
@@ -102,8 +105,8 @@ export function FieldsMap({ fields, parcels, sensores, height = 400 }: FieldsMap
         scrollWheelZoom={true}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution={TILE_ATTR}
+          url={theme === "dark" ? TILE_DARK : TILE_LIGHT}
         />
         {allItems.map((item, i) => (
           <GeoJSON

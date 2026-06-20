@@ -100,3 +100,42 @@ a:hover {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-hover);
 }
+
+[data-theme="dark"] .leaflet-container {
+  background: #1a1a2e;
+}
+
+[data-theme="dark"] .leaflet-tooltip {
+  background: rgba(15, 23, 42, 0.9);
+  color: #f1f5f9;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] .leaflet-tooltip-top:before,
+[data-theme="dark"] .leaflet-tooltip-bottom:before,
+[data-theme="dark"] .leaflet-tooltip-left:before,
+[data-theme="dark"] .leaflet-tooltip-right:before {
+  border-top-color: rgba(255,255,255,0.1);
+}
+
+[data-theme="dark"] .leaflet-control-zoom a {
+  background: rgba(15, 23, 42, 0.85);
+  color: #f1f5f9;
+  border-color: rgba(255,255,255,0.1);
+}
+
+[data-theme="dark"] .leaflet-control-zoom a:hover {
+  background: rgba(30, 41, 59, 0.9);
+}
+
+[data-theme="dark"] .leaflet-draw-toolbar a {
+  background: rgba(15, 23, 42, 0.85);
+  color: #f1f5f9;
+  border-color: rgba(255,255,255,0.1);
+}
+
+[data-theme="dark"] .leaflet-draw-toolbar a:hover {
+  background: rgba(30, 41, 59, 0.9);
+}
