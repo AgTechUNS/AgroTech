@@ -9,12 +9,12 @@ mientras se espera la respuesta HTTP de Twilio.
 import asyncio
 import os
 
-from twilio.rest import Client
-
 _ALERT_PHONE = os.environ.get("ALERT_PHONE", "+5491112345678")
 
 
-def _get_client() -> Client:
+def _get_client():
+    from twilio.rest import Client
+
     account_sid = os.environ["TWILIO_ACCOUNT_SID"]
     auth_token = os.environ["TWILIO_AUTH_TOKEN"]
     return Client(account_sid, auth_token)

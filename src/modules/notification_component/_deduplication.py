@@ -13,22 +13,23 @@ mismo tiempo para el mismo lote — no hay race condition posible.
 """
 
 import os
-
-import redis.asyncio as redis
+from typing import Any
 
 from ._contracts import NotificationJob
 
 _TTL_SECONDS = 30 * 60  # 30 minutos: ventana de deduplicación
 
-_redis_client: redis.Redis | None = None
+_redis_client: Any = None
 
 
-def _get_client() -> redis.Redis:
+def _get_client() -> Any:
     """
     Lazy singleton: la conexión se crea recién en el primer uso,
     no al importar el módulo. Esto evita fallar al importar el
     paquete si Redis todavía no está disponible (ej. en tests).
     """
+    import redis.asyncio as redis
+
     global _redis_client
     if _redis_client is None:
         redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379")
