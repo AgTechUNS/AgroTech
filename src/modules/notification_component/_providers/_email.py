@@ -12,11 +12,12 @@ import asyncio
 import os
 
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+from sendgrid.helpers.mail import Mail, MailSettings, SandBoxMode
 
 _SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 _ALERT_EMAIL = os.getenv("ALERT_EMAIL", "admin@agtech.com")
 _FROM_EMAIL = os.getenv("SENDGRID_FROM", "alertas@agtech.com")
+_SANDBOX_MODE = os.getenv("SENDGRID_SANDBOX_MODE", "true").lower() in ("1", "true", "yes")
 
 
 async def send_email(message: str, subject: str) -> None:
@@ -38,5 +39,8 @@ async def send_email(message: str, subject: str) -> None:
         subject=f"⚠️ AgTechUNS — {subject}",
         plain_text_content=message,
     )
+
+    if _SANDBOX_MODE:
+        mail.mail_settings = MailSettings(sandbox_mode=SandBoxMode(enable=True))
 
     await asyncio.to_thread(client.send, mail)
