@@ -117,6 +117,19 @@ class RelationalRepositoryInterface(Protocol):
     async def list_reglas(self) -> list[models.Regla]:
         ...
 
+    async def get_regla_by_nombre_and_campo(self, nombre_regla: str, nombre_campo: str) -> Optional[models.Regla]:
+        ...
+
+    async def update_regla(
+        self, nombre_regla: str, nombre_campo: str, *,
+        formula: str | None = None, umbral: float | None = None,
+        descripcion: str | None = None,
+    ) -> Optional[models.Regla]:
+        ...
+
+    async def delete_regla(self, nombre_regla: str, nombre_campo: str) -> bool:
+        ...
+
     # ── Ventana Temporal ──────────────────────────────────────
     async def create_ventana_temporal(
         self, fecha_ini: datetime, fecha_fin: datetime, nombre_parcela: str
@@ -149,7 +162,7 @@ class RelationalRepositoryInterface(Protocol):
     # ── Predicciones ──────────────────────────────────────────
     async def create_prediccion(
         self, fecha_emision: datetime, resultado: str, fecha_ini: datetime, fecha_fin: datetime,
-        nombre_regla: str, nombre_campo: str
+        nombre_campo: str, nombre_regla: str | None = None
     ) -> models.Prediccion:
         ...
 
@@ -160,7 +173,7 @@ class RelationalRepositoryInterface(Protocol):
 
     # ── Alertas ───────────────────────────────────────────────
     async def create_alerta(
-        self, fecha_emision: datetime, mensaje: str, nombre_parcela: str, email_usuario: str
+        self, fecha_emision: datetime, mensaje: str, nombre_parcela: str, email_usuario: str | None = None
     ) -> models.Alerta:
         ...
 

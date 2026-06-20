@@ -146,11 +146,8 @@ class Alerta(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     fecha_emision: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     mensaje: Mapped[str] = mapped_column(Text, nullable=False)
-    nombre_parcela: Mapped[str] = mapped_column(String(255), ForeignKey("parcela.nombre_parcela"), nullable=False)
-    email_usuario: Mapped[str] = mapped_column(String(255), ForeignKey("usuario.email_usuario"), nullable=False)
-
-    parcela: Mapped["Parcela"] = relationship("Parcela")
-    usuario: Mapped["Usuario"] = relationship("Usuario")
+    nombre_parcela: Mapped[str] = mapped_column(String(255), nullable=False)
+    email_usuario: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     def __repr__(self):
         return f"<Alerta #{self.id} parcela={self.nombre_parcela!r}>"
@@ -226,19 +223,8 @@ class Prediccion(Base):
     resultado: Mapped[str] = mapped_column(Text, nullable=False)
     fecha_ini: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     fecha_fin: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    nombre_regla: Mapped[str] = mapped_column(String(255), nullable=False)
+    nombre_regla: Mapped[str | None] = mapped_column(String(255), nullable=True)
     nombre_campo: Mapped[str] = mapped_column(String(255), nullable=False)
-
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["nombre_regla", "nombre_campo"],
-            ["regla.nombre_regla", "regla.nombre_campo"],
-        ),
-        ForeignKeyConstraint(
-            ["fecha_ini", "fecha_fin"],
-            ["ventana_temporal.fecha_ini", "ventana_temporal.fecha_fin"],
-        ),
-    )
 
     def __repr__(self):
         return f"<Prediccion #{self.id} campo={self.nombre_campo!r}>"

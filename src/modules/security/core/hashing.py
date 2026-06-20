@@ -1,0 +1,120 @@
+﻿"""
+hashing.py ÔÇö Hashing y verificaci├│n de contrase├▒as con bcrypt.
+
+Responsabilidades:
+  - hash_password()    : genera el hash bcrypt a almacenar en la columna
+                         hash_password de la tabla USUARIO (PostgreSQL).
+  - verify_password()  : compara texto plano contra hash en cada login.
+                         Invocado por auth/service.py ÔåÆ verify_credentials().
+
+Consideraciones de seguridad:
+  - bcrypt incorpora salt autom├ítico en cada llamada a hash() ÔÇö no es
+    necesario gestionar el salt manualmente.
+  - El costo (rounds) determina el tiempo de c├│mputo. A mayor costo,
+    m├ís lento para el atacante en fuerza bruta, pero tambi├®n m├ís lento
+    para el usuario leg├¡timo. 12 es el est├índar recomendado en 2024.
+  - verify() es resistente a timing attacks por dise├▒o de passlib.
+"""
+
+import logging
+
+from passlib.context import CryptContext
+
+logger = logging.getLogger(__name__)
+
+# Rounds = 12: balance entre seguridad y latencia (~250ms en hardware moderno).
+# Incrementar a 13-14 en producci├│n si el hardware lo permite sin degradar UX.
+_pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=12,
+)
+
+
+def hash_password(plain_password: str) -> str:
+    """
+    Genera el hash bcrypt de una contrase├▒a en texto plano.
+
+    El resultado se almacena en la columna hash_password de la tabla
+    USUARIO. Cada llamada produce un hash distinto aunque la contrase├▒a
+    sea la misma (salt aleatorio incluido autom├íticamente).
+
+    Par├ímetros
+    ----------
+    plain_password : contrase├▒a en texto plano ingresada por el usuario.
+
+    Retorna
+    -------
+    Hash bcrypt listo para persistir en PostgreSQL.
+
+    Ejemplo
+    -------
+    >>> hashed = hash_password("mi_clave_segura")
+    >>> hashed.startswith("$2b$")
+    True
+    """
+    if not plain_password:
+        raise ValueError("La contrase├▒a no puede estar vac├¡a.")
+
+    return _pwd_context.hash(plain_password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    Verifica si una contrase├▒a en texto plano coincide con su hash bcrypt.
+
+    Invocada en cada intento de login por auth/service.py.
+    Usa comparaci├│n en tiempo constante para evitar timing attacks.
+
+    Par├ímetros
+    ----------
+    plain_password   : contrase├▒a ingresada por el usuario en el login.
+    hashed_password  : hash almacenado en la columna hash_password del USUARIO.
+
+    Retorna
+    -------
+    True si coinciden, False en caso contrario.
+
+    Nota de seguridad
+    -----------------
+    Esta funci├│n NUNCA debe lanzar excepci├│n por credenciales inv├ílidas ÔÇö
+    solo retorna False. La excepci├│n (InvalidCredentialsException) es
+    responsabilidad de auth/service.py, para no exponer en qu├® paso
+    fall├│ la autenticaci├│n.
+    """
+    if not plain_password or not hashed_password:
+        return False
+
+    try:
+        return _pwd_context.verify(plain_password, hashed_password)
+    except Exception:
+        # Hash malformado u otro error interno ÔÇö tratamos como fallo silencioso.
+        # Logueamos para monitoreo pero no propagamos detalles al caller.
+        logger.warning("verify_password: error al verificar hash ÔÇö posible hash malformado.")
+        return False
+
+
+def needs_rehash(hashed_password: str) -> bool:
+    """
+    Determina si un hash existente debe ser regenerado.
+
+    passlib detecta autom├íticamente si el hash fue generado con un costo
+    inferior al configurado actualmente (bcrypt__rounds). ├Ütil para
+    migraci├│n progresiva: al hacer login exitoso, si needs_rehash() es True,
+    regenerar y persistir el nuevo hash sin interrumpir al usuario.
+
+    Par├ímetros
+    ----------
+    hashed_password : hash almacenado en la base de datos.
+
+    Retorna
+    -------
+    True si el hash debe actualizarse, False si est├í al d├¡a.
+
+    Uso en auth/service.py
+    ----------------------
+    if verify_password(plain, stored_hash) and needs_rehash(stored_hash):
+        user.hash_password = hash_password(plain)
+        await db.commit()
+    """
+    return _pwd_context.needs_update(hashed_password)

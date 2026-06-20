@@ -48,9 +48,16 @@ def _ensure_ee():
         if _ee_initialized:
             return
         creds_path = _resolve_gee_credentials()
-        credentials = ee.ServiceAccountCredentials(None, creds_path)
-        ee.Initialize(credentials, project=GEE_PROJECT_ID)
-        _ee_initialized = True
+        try:
+            credentials = ee.ServiceAccountCredentials(None, creds_path)
+            ee.Initialize(credentials, project=GEE_PROJECT_ID)
+            _ee_initialized = True
+        finally:
+            if GEE_CREDENTIALS_JSON:
+                try:
+                    os.remove(creds_path)
+                except OSError:
+                    pass
 
 
 async def fetch_weather(latitude: float, longitude: float) -> WeatherResponse:
@@ -120,11 +127,7 @@ async def fetch_satellite_indices(
     result = await asyncio.to_thread(_compute)
 
     if result is None:
-        from fastapi import HTTPException
-        raise HTTPException(
-            status_code=404,
-            detail="Capa satelital no disponible temporalmente",
-        )
+        raise ValueError("Capa satelital no disponible temporalmente")
 
     ndvi_value, ndmi_value, epoch_ms = result
 

@@ -10,13 +10,13 @@ src/                        # Python package root (run all commands from repo ro
 ├── core/config.py          # Env-based settings (dataclass singleton)
 ├── modules/                # Business domain components
 │   ├── iot_ingestion/      # MQTT subscriber + dedup + async workers → InfluxDB
-│   ├── analitycs_engine/   # Rule evaluation (heat/hydric stress alerts)
+│   ├── analytics_engine/   # Rule evaluation (heat/hydric stress alerts)
 │   ├── external_data_gateway/  # REST endpoints → Open-Meteo + Google Earth Engine
 │   ├── notification_component/ # Alert dispatch: in_app / email / sms (Redis dedup)
 │   └── security/           # TODO (empty)
 └── infrastructure/         # Persistence implementations
     ├── time_series_repo/   # InfluxDB client + Flux query builder
-    └── relational_repo/    # TODO (empty)
+    └── relational_repo/    # PostgreSQL + SQLAlchemy (usuarios, reglas, alertas, predicciones)
 ```
 
 ## Running the project
@@ -53,6 +53,6 @@ docker compose -f deploy/broker/docker-compose.yml up -d
 - **MQTT topic**: `v3/agtechuns-app/devices/+/up` (QoS 1). Payload is base64-decoded JSON with fields `{t, h}` (temperature, humidity).
 - **DLQ file** (`dlq_fallos.json`) is gitignored, created at runtime for failed InfluxDB writes.
 - **Ports & dependencies**: `TimeSeriesRepositoryInterface` (Protocol in `modules/iot_ingestion/ports.py`) defines the boundary between IoT ingestion and InfluxDB. Wire implementations via constructor injection.
-- **Analytics Engine** is pure functions (no persistence yet). Reads from InfluxDB via `TelemetryQuery`, evaluates rules, produces `ResultadoPrediccion`.
+- **Analytics Engine** reads from InfluxDB via `TelemetryQuery`, evaluates rules, notifies via `notification_component`, and persists alerts to PostgreSQL via `RelationalRepository`.
 - **Notification component** uses `_`-prefixed private modules. Contract: build a `NotificationJob` and pass to the handler.
 - **GEE initialization** is a thread-safe singleton with `asyncio.to_thread`. Must have a valid service account.

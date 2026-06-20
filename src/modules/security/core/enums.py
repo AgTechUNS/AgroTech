@@ -1,0 +1,28 @@
+﻿"""
+enums.py ÔÇö Enumeraciones compartidas del sistema AgTechUNS.
+
+Viven en core/ para evitar dependencias circulares:
+  - auth/models.py    importa RoleEnum para la columna SQLAlchemy
+  - security/roles.py importa RoleEnum para la l├│gica RBAC
+
+Regla: ning├║n m├│dulo define sus propios enums de negocio ÔÇö
+todos los importan desde ac├í.
+"""
+
+import enum
+
+
+class RoleEnum(str, enum.Enum):
+    """
+    Roles del sistema definidos en el modelo de datos AgTechUNS.
+
+    Hereda de str para que SQLAlchemy, Pydantic y python-jose
+    puedan serializarlo directamente como string sin conversi├│n extra.
+
+    Valores:
+      ADMINISTRADOR : acceso total al sistema.
+      AGRONOMO      : acceso limitado a sus campos asignados.
+    """
+
+    ADMINISTRADOR = "administrador"
+    AGRONOMO      = "agronomo"

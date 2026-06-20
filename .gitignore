@@ -26,6 +26,7 @@ dlq_fallos.json
 
 /ArchivosLocales/
 /.opencode/
+/.Opencode/
 
 # Credenciales y secrets (nunca committear)
 service_account.json
