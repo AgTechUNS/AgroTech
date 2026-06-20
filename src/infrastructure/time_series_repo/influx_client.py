@@ -7,7 +7,7 @@ import logging
 
 from modules.iot_ingestion.query_models import TelemetryQuery
 
-load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "tools", "simulador_sensores", "credenciales.env"))
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".env"))
 logging.getLogger("influxdb_client").setLevel(logging.ERROR)
 
 

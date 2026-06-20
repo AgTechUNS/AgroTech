@@ -16,9 +16,6 @@ from modules.analytics_engine.models import (
     Prediccion,
     PrediccionesResponse,
     RecomendacionesResponse,
-    ReglaRequest,
-    ReglaResponse,
-    ReglaUpdateRequest,
 )
 from modules.external_data_gateway.gateway import (
     fetch_satellite_indices,
@@ -292,105 +289,5 @@ async def consultar_predicciones(
 # ──────────────────────────────────────────────
 
 
-@router.post("/reglas", status_code=status.HTTP_201_CREATED)
-async def crear_regla(
-    body: ReglaRequest,
-    relational_repo: RelationalRepository | None = Depends(_obtener_relational_repo),
-    user: UserContext = Depends(get_current_user),
-) -> ReglaResponse:
-    repo = _verificar_relational_repo(relational_repo)
-    regla = await repo.create_regla(
-        nombre_regla=body.nombre_regla,
-        nombre_campo=body.nombre_campo,
-        formula=f"{body.metrica} {body.operador} {body.valor}",
-        umbral=body.valor,
-        descripcion=body.descripcion,
-    )
-    logger.info("Regla creada: %s en campo %s", regla.nombre_regla, regla.nombre_campo)
-    return ReglaResponse(
-        nombre_regla=regla.nombre_regla,
-        nombre_campo=regla.nombre_campo,
-        metrica=body.metrica,
-        operador=body.operador,
-        valor=regla.umbral,
-        descripcion=regla.descripcion_regla,
-    )
-
-
-@router.get("/{nombreCampo}/reglas")
-async def listar_reglas_campo(
-    nombreCampo: str,
-    relational_repo: RelationalRepository | None = Depends(_obtener_relational_repo),
-    user: UserContext = Depends(get_current_user),
-) -> list[ReglaResponse]:
-    repo = _verificar_relational_repo(relational_repo)
-    reglas = await repo.list_reglas_by_campo(nombreCampo)
-    return [
-        ReglaResponse(
-            nombre_regla=r.nombre_regla,
-            nombre_campo=r.nombre_campo,
-            metrica=r.formula.split()[0] if " " in r.formula else r.formula,
-            operador=r.formula.split()[1] if len(r.formula.split()) > 1 else "",
-            valor=r.umbral,
-            descripcion=r.descripcion_regla,
-        )
-        for r in reglas
-    ]
-
-
-@router.put("/reglas/{nombre_regla}")
-async def actualizar_regla(
-    nombre_regla: str,
-    body: ReglaUpdateRequest,
-    nombre_campo: str = Query(..., description="Nombre del campo al que pertenece la regla"),
-    relational_repo: RelationalRepository | None = Depends(_obtener_relational_repo),
-    user: UserContext = Depends(get_current_user),
-) -> ReglaResponse:
-    repo = _verificar_relational_repo(relational_repo)
-    formula = None
-    if body.metrica is not None or body.operador is not None:
-        metrica = body.metrica or ""
-        operador = body.operador or ""
-        if body.metrica is not None and body.operador is not None:
-            formula = f"{body.metrica} {body.operador}"
-        elif body.metrica is not None:
-            formula = body.metrica
-        elif body.operador is not None:
-            formula = operador
-    regla = await repo.update_regla(
-        nombre_regla=nombre_regla,
-        nombre_campo=nombre_campo,
-        formula=formula,
-        umbral=body.valor,
-        descripcion=body.descripcion,
-    )
-    if regla is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Regla '{nombre_regla}' no encontrada en campo '{nombre_campo}'.",
-        )
-    return ReglaResponse(
-        nombre_regla=regla.nombre_regla,
-        nombre_campo=regla.nombre_campo,
-        metrica=regla.formula.split()[0] if " " in regla.formula else regla.formula,
-        operador=regla.formula.split()[1] if len(regla.formula.split()) > 1 else "",
-        valor=regla.umbral,
-        descripcion=regla.descripcion_regla,
-    )
-
-
-@router.delete("/reglas/{nombre_regla}", status_code=status.HTTP_204_NO_CONTENT)
-async def eliminar_regla(
-    nombre_regla: str,
-    nombre_campo: str = Query(..., description="Nombre del campo al que pertenece la regla"),
-    relational_repo: RelationalRepository | None = Depends(_obtener_relational_repo),
-    user: UserContext = Depends(get_current_user),
-):
-    repo = _verificar_relational_repo(relational_repo)
-    eliminado = await repo.delete_regla(nombre_regla=nombre_regla, nombre_campo=nombre_campo)
-    if not eliminado:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Regla '{nombre_regla}' no encontrada en campo '{nombre_campo}'.",
-        )
-    ]
+# NOTE: CRUD de reglas migrado a /api/reglas via data_api.router
+# Los endpoints heredados se mantienen como wrappers para compatibilidad.

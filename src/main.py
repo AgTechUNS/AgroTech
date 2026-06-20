@@ -1,6 +1,10 @@
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 from fastapi import FastAPI
 
@@ -10,6 +14,9 @@ from infrastructure.relational_repo.repository import RelationalRepository
 from infrastructure.time_series_repo.influx_client import TimeSeriesRepository
 from modules.analytics_engine.router import router as analytics_router
 from modules.analytics_engine.tasks import run_batch_diario
+from modules.auth.router import router as auth_router
+from modules.auth.dependencies import init_db
+from modules.data_api.router import router as data_api_router
 from modules.external_data_gateway.router import router as external_data_router
 
 logger = logging.getLogger(__name__)
@@ -35,6 +42,7 @@ async def lifespan(app: FastAPI):
         await db.create_tables()
         app.state.relational_repo = RelationalRepository(db.session_factory)
         logger.info("Base de datos relacional conectada exitosamente")
+        await init_db()
     except Exception as e:
         logger.warning("Base de datos relacional no disponible: %s", e)
         app.state.relational_repo = None
@@ -69,6 +77,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.include_router(auth_router)
+app.include_router(data_api_router)
 app.include_router(external_data_router)
 app.include_router(analytics_router)
 

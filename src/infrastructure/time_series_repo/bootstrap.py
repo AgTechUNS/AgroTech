@@ -1,5 +1,9 @@
 import asyncio
+import os
+from dotenv import load_dotenv
 from modules.iot_ingestion.mqtt_subscriber import IotIngestionService
+
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".env"))
 from infrastructure.time_series_repo.influx_client import TimeSeriesRepository
 
 async def main():
