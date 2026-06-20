@@ -35,9 +35,6 @@ secrets/
 .env
 .env.local
 
-# local data store
-/.data/
-
 # Python
 __pycache__/
 *.pyc
