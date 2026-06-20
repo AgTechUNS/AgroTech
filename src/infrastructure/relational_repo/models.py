@@ -76,7 +76,7 @@ class ImagenSatelital(Base):
 class EjecucionBatch(Base):
     __tablename__ = "ejecucion_batch"
 
-    fecha_ini: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
     estado: Mapped[str] = mapped_column(String(50), nullable=False, comment="EN_CURSO, COMPLETADO, FALLIDO")
     fecha_fin: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -127,8 +127,8 @@ class VentanaTemporal(Base):
 class Alerta(Base):
     __tablename__ = "alerta"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    fecha_emision: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     mensaje: Mapped[str] = mapped_column(Text, nullable=False)
     nombre_parcela: Mapped[str] = mapped_column(String(255), ForeignKey("parcela.nombre_parcela"), nullable=False)
     email_usuario: Mapped[str] = mapped_column(String(255), ForeignKey("usuario.email_usuario"), nullable=False)
@@ -194,9 +194,8 @@ class SensorParcela(Base):
 
 class Prediccion(Base):
     __tablename__ = "prediccion"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    fecha_emision: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     resultado: Mapped[str] = mapped_column(Text, nullable=False)
     fecha_ini: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     fecha_fin: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
