@@ -4,6 +4,9 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from infrastructure.time_series_repo.influx_client import TimeSeriesRepository
+from modules.security.core.enums import RoleEnum
+from modules.security.roles import require_role
+from modules.security.schemas import UserContext
 from modules.analytics_engine.engine import (
     evaluar_umbral_humedad,
     evaluar_umbral_temperatura,
@@ -56,6 +59,7 @@ async def consultar_recomendaciones(
     page: int = Query(1, ge=1, description="Número de página"),
     limit: int = Query(20, ge=1, le=100, description="Elementos por página"),
     repo: TimeSeriesRepository | None = Depends(_obtener_repo),
+    user: UserContext = Depends(require_role(RoleEnum.AGRONOMO)),
 ):
     repo = _verificar_repo(repo)
     query = TelemetryQuery(
@@ -113,6 +117,7 @@ async def consultar_predicciones(
         description="Longitud para enriquecer con datos externos",
     ),
     repo: TimeSeriesRepository | None = Depends(_obtener_repo),
+    user: UserContext = Depends(require_role(RoleEnum.AGRONOMO)),
 ):
     repo = _verificar_repo(repo)
     ahora = datetime.now(timezone.utc)

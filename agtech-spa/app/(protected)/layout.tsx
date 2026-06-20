@@ -1,0 +1,13 @@
+"use client";
+
+import { ReactNode } from "react";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+
+export default function ProtectedLayout({ children }: { children: ReactNode }) {
+  return (
+    <AuthProvider>
+      <DashboardLayout>{children}</DashboardLayout>
+    </AuthProvider>
+  );
+}
