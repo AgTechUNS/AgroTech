@@ -17,7 +17,6 @@ import os
 _ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 _AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 _TWILIO_FROM = os.getenv("TWILIO_FROM")
-_ALERT_PHONE = os.getenv("ALERT_PHONE", "+5491112345678")
 
 
 def _get_client():
@@ -28,10 +27,12 @@ def _get_client():
     return Client(_ACCOUNT_SID, _AUTH_TOKEN)
 
 
-async def send_sms(message: str) -> None:
+async def send_sms(message: str, recipient_phone: str) -> None:
     """Envía un SMS vía Twilio."""
     if not _TWILIO_FROM:
         raise ValueError("TWILIO_FROM no está configurada")
+    if not recipient_phone:
+        raise ValueError("recipient_phone no está configurado")
 
     client = _get_client()
 
@@ -39,6 +40,6 @@ async def send_sms(message: str) -> None:
         client.messages.create,
         body=message,
         from_=_TWILIO_FROM,
-        to=_ALERT_PHONE,
+        to=recipient_phone,
     )
-    print(f"[Notification] SMS enviado a {_ALERT_PHONE} desde {_TWILIO_FROM}")
+    print(f"[Notification] SMS enviado a {recipient_phone} desde {_TWILIO_FROM}")

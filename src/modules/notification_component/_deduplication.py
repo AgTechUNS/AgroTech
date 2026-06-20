@@ -38,7 +38,7 @@ def _get_client() -> Any:
 
 
 def _dedup_key(job: NotificationJob) -> str:
-    return f"dedup:{job.event_type.value}:{job.field_id}"
+    return f"dedup:{job.event_type.value}:{job.recipient_id}:{job.field_id}"
 
 
 async def is_duplicate(job: NotificationJob) -> bool:

@@ -8,7 +8,7 @@ notificar algo debe construir un NotificationJob usando estos tipos.
 No agregar lógica de negocio aquí — solo definiciones de datos.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -35,7 +35,10 @@ class NotificationJob(BaseModel):
     """
 
     event_type: EventType
+    recipient_id: str = Field(..., description="Identificador del agricultor destinatario")
+    recipient_email: str = Field(..., description="Correo electrónico del destinatario")
+    recipient_phone: str = Field(..., description="Teléfono del destinatario en formato E.164")
     field_id: str = Field(..., description="Identificador del lote, ej: 'lote-4'")
     value: float = Field(..., description="Valor medido que disparó la alerta")
     threshold: float = Field(..., description="Umbral configurado que fue cruzado")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
