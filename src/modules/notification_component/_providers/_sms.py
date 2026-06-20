@@ -31,3 +31,4 @@ async def send_sms(message: str) -> None:
         from_=from_number,
         to=_ALERT_PHONE,
     )
+    print(f"[Notification] SMS enviado a {_ALERT_PHONE} desde {from_number}")

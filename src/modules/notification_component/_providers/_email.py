@@ -37,3 +37,4 @@ async def send_email(message: str, subject: str) -> None:
         mail.mail_settings = MailSettings(sandbox_mode=SandBoxMode(enable=True))
 
     await asyncio.to_thread(client.send, mail)
+    print(f"[Notification] Email enviado a {_ALERT_EMAIL} desde {_FROM_EMAIL} con asunto '{subject}'")
