@@ -1,53 +1,18 @@
-from sqlalchemy import String, Float, Enum as SAEnum, ForeignKey, Text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from datetime import datetime, timezone
+from typing import Optional
 
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    ForeignKeyConstraint,
+    PrimaryKeyConstraint,
+    String,
+    Text,
+)
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-"""class Base(DeclarativeBase):
-    pass
-
-
-
-class UsuarioModel(Base):
-    __tablename__ = "usuarios"
-
-    email: Mapped[str] = mapped_column(String(255), primary_key=True)
-    password_hash: Mapped[str] = mapped_column(String(255))
-    rol: Mapped[str] = mapped_column(SAEnum("ADMIN", "AGRONOMO", "PRODUCTOR", name="rol_usuario"))
-
-
-class CultivoModel(Base):
-    __tablename__ = "cultivos"
-
-    nombre: Mapped[str] = mapped_column(String(100), primary_key=True)
-    umbral_humedad_minima: Mapped[float] = mapped_column(Float)
-    umbral_temperatura_maxima: Mapped[float | None] = mapped_column(Float, nullable=True)
-
-
-class CampoModel(Base): 
-    __tablename__ = "campos"
-
-    nombre: Mapped[str] = mapped_column(String(100), primary_key=True)
-    descripcion: Mapped[str | None] = mapped_column(Text, nullable=True)
-    coordenadas: Mapped[str] = mapped_column(Text, comment="GeoJSON Polygon")
-
-
-class ParcelaModel(Base):
-    __tablename__ = "parcelas"
-
-    nombre: Mapped[str] = mapped_column(String(100), primary_key=True)
-    campo_nombre: Mapped[str] = mapped_column(String(100), ForeignKey("campos.nombre"), primary_key=True)
-    coordenadas: Mapped[str] = mapped_column(Text, comment="GeoJSON Polygon")
-    descripcion: Mapped[str | None] = mapped_column(Text, nullable=True)
-    cultivo_nombre: Mapped[str | None] = mapped_column(String(100), ForeignKey("cultivos.nombre"), nullable=True)
-
-
-class ReglaModel(Base):
-    __tablename__ = "reglas"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    metrica: Mapped[str] = mapped_column(String(50))
-    operador: Mapped[str] = mapped_column(String(10))
-    valor: Mapped[float] = mapped_column(Float)*/"""
 
 class Base(DeclarativeBase):
     pass
@@ -57,181 +22,194 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _new_uuid() -> str:
-    return str(uuid.uuid4())
+# ──────────────────────────────────────────────
+# Entidades Independientes
+# ──────────────────────────────────────────────
 
 
 class Usuario(Base):
     __tablename__ = "usuario"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    email_usuario: Mapped[str] = mapped_column(String(255), primary_key=True)
     nombre: Mapped[str] = mapped_column(String(255), nullable=False)
-    rol: Mapped[str] = mapped_column(Enum("ADMIN", "AGRONOMO", "PRODUCTOR", name="rol_usuario"), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
-
-    campos: Mapped[list["Campo"]] = relationship("Campo", back_populates="usuario", cascade="all, delete-orphan")
-    alertas: Mapped[list["Alerta"]] = relationship("Alerta", back_populates="usuario", cascade="all, delete-orphan")
+    telefono: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    hash_password: Mapped[str] = mapped_column(String(255), nullable=False)
 
 
 class Campo(Base):
     __tablename__ = "campo"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
-    nombre: Mapped[str] = mapped_column(String(255), nullable=False)
+    nombre_campo: Mapped[str] = mapped_column(String(255), primary_key=True)
+    coordenadas_campo: Mapped[str] = mapped_column(Text, nullable=False, comment="Polígono GeoJSON")
+    descripcion_campo: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
+class Rol(Base):
+    __tablename__ = "rol"
+
+    nombre_rol: Mapped[str] = mapped_column(String(100), primary_key=True)
     descripcion: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    coordenadas: Mapped[str] = mapped_column(Text, nullable=False, comment="Polígono GeoJSON")
-    usuario_id: Mapped[str] = mapped_column(String(36), ForeignKey("usuario.id"), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
-
-    __table_args__ = (
-        UniqueConstraint("nombre", "usuario_id", name="uq_campo_nombre_usuario"),
-    )
-
-    usuario: Mapped["Usuario"] = relationship("Usuario", back_populates="campos")
-    parcelas: Mapped[list["Parcela"]] = relationship("Parcela", back_populates="campo", cascade="all, delete-orphan")
-    sensores: Mapped[list["Sensor"]] = relationship("Sensor", back_populates="campo", cascade="all, delete-orphan")
-
-
-class Parcela(Base):
-    __tablename__ = "parcela"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
-    nombre: Mapped[str] = mapped_column(String(255), nullable=False)
-    descripcion: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    coordenadas: Mapped[str] = mapped_column(Text, nullable=False, comment="Polígono GeoJSON")
-    campo_id: Mapped[str] = mapped_column(String(36), ForeignKey("campo.id"), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
-
-    __table_args__ = (
-        UniqueConstraint("nombre", "campo_id", name="uq_parcela_nombre_campo"),
-    )
-
-    campo: Mapped["Campo"] = relationship("Campo", back_populates="parcelas")
-    historiales_cultivo: Mapped[list["HistorialCultivo"]] = relationship(
-        "HistorialCultivo", back_populates="parcela", cascade="all, delete-orphan"
-    )
-    sensores: Mapped[list["Sensor"]] = relationship("Sensor", back_populates="parcela", cascade="all, delete-orphan")
-    predicciones: Mapped[list["Prediccion"]] = relationship("Prediccion", back_populates="parcela", cascade="all, delete-orphan")
-    alertas: Mapped[list["Alerta"]] = relationship("Alerta", back_populates="parcela", cascade="all, delete-orphan")
 
 
 class Cultivo(Base):
     __tablename__ = "cultivo"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
-    nombre: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    umbral_humedad_minima: Mapped[float] = mapped_column(Float, nullable=False, comment="Constante agronómica: humedad mínima (%)")
-    umbral_temperatura_maxima: Mapped[float] = mapped_column(Float, nullable=False, comment="Constante agronómica: temperatura máxima (°C)")
-    descripcion: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
-
-    historiales: Mapped[list["HistorialCultivo"]] = relationship(
-        "HistorialCultivo", back_populates="cultivo", cascade="all, delete-orphan"
-    )
-
-
-class HistorialCultivo(Base):
-    __tablename__ = "historial_cultivo"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
-    parcela_id: Mapped[str] = mapped_column(String(36), ForeignKey("parcela.id"), nullable=False)
-    cultivo_id: Mapped[str] = mapped_column(String(36), ForeignKey("cultivo.id"), nullable=False)
-    fecha_inicio: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    fecha_fin: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, comment="NULL = cultivo actual")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
-
-    parcela: Mapped["Parcela"] = relationship("Parcela", back_populates="historiales_cultivo")
-    cultivo: Mapped["Cultivo"] = relationship("Cultivo", back_populates="historiales")
+    nombre_cultivo: Mapped[str] = mapped_column(String(255), primary_key=True)
+    variedad: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
 
 class Sensor(Base):
     __tablename__ = "sensor"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
-    sensor_id_externo: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, comment="ID del device en TTN/LoRaWAN")
-    nombre: Mapped[str] = mapped_column(String(255), nullable=False)
-    ubicacion: Mapped[str] = mapped_column(Text, nullable=False, comment="Coordenadas absolutas GeoJSON Point o coordenadas relativas a la parcela")
-    activo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    parcela_id: Mapped[str] = mapped_column(String(36), ForeignKey("parcela.id"), nullable=False)
-    campo_id: Mapped[str] = mapped_column(String(36), ForeignKey("campo.id"), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
-
-    parcela: Mapped["Parcela"] = relationship("Parcela", back_populates="sensores")
-    campo: Mapped["Campo"] = relationship("Campo", back_populates="sensores")
-
-
-class Regla(Base):
-    __tablename__ = "regla"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
-    nombre: Mapped[str] = mapped_column(String(255), nullable=False)
-    metrica: Mapped[str] = mapped_column(String(50), nullable=False, comment="temperatura, humedad, ndvi")
-    operador: Mapped[str] = mapped_column(String(10), nullable=False, comment=">=, <=, >, <, ==")
-    valor: Mapped[float] = mapped_column(Float, nullable=False)
-    activa: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
-
-
-class Prediccion(Base):
-    __tablename__ = "prediccion"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
-    parcela_id: Mapped[str] = mapped_column(String(36), ForeignKey("parcela.id"), nullable=False, index=True)
-    fecha_emision: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    fecha_inicio: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="Inicio de la ventana pronosticada")
-    fecha_fin: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="Fin de la ventana pronosticada")
-    resultado: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
-
-    parcela: Mapped["Parcela"] = relationship("Parcela", back_populates="predicciones")
-
-
-class Alerta(Base):
-    __tablename__ = "alerta"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
-    tipo: Mapped[str] = mapped_column(
-        Enum("ALERTA_TIEMPO_REAL", "RECOMENDACION_BATCH", name="tipo_alerta"),
-        nullable=False,
-    )
-    mensaje: Mapped[str] = mapped_column(Text, nullable=False)
-    leida: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    fecha_emision: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    parcela_id: Mapped[str] = mapped_column(String(36), ForeignKey("parcela.id"), nullable=False, index=True)
-    usuario_id: Mapped[str] = mapped_column(String(36), ForeignKey("usuario.id"), nullable=False, index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
-
-    parcela: Mapped["Parcela"] = relationship("Parcela", back_populates="alertas")
-    usuario: Mapped["Usuario"] = relationship("Usuario", back_populates="alertas")
+    nombre_codigo_sensor: Mapped[str] = mapped_column(String(255), primary_key=True)
+    estado: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, comment="True=activo, False=inactivo")
 
 
 class ImagenSatelital(Base):
     __tablename__ = "imagen_satelital"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
-    parcela_id: Mapped[str] = mapped_column(String(36), ForeignKey("parcela.id"), nullable=False, index=True)
+    id_imagen: Mapped[str] = mapped_column(String(255), primary_key=True)
     fecha_captura: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    ndvi: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="Normalized Difference Vegetation Index (-1 a 1)")
-    ndmi: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="Normalized Difference Moisture Index (-1 a 1)")
-    fuente: Mapped[str] = mapped_column(String(100), nullable=False, comment="Google Earth Engine, Sentinel Hub, etc.")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    proveedor: Mapped[str] = mapped_column(String(255), nullable=False)
 
 
-class RefreshToken(Base):
-    __tablename__ = "refresh_token"
+class EjecucionBatch(Base):
+    __tablename__ = "ejecucion_batch"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
-    usuario_id: Mapped[str] = mapped_column(String(36), ForeignKey("usuario.id"), nullable=False, index=True)
-    token_hash: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, comment="SHA-256 del refresh token")
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    fecha_ini: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    estado: Mapped[str] = mapped_column(String(50), nullable=False, comment="EN_CURSO, COMPLETADO, FALLIDO")
+    fecha_fin: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+# ──────────────────────────────────────────────
+# Entidades Dependientes (Jerárquicas)
+# ──────────────────────────────────────────────
 
+
+class Parcela(Base):
+    __tablename__ = "parcela"
+
+    nombre_parcela: Mapped[str] = mapped_column(String(255), primary_key=True)
+    coordenadas_parcela: Mapped[str] = mapped_column(Text, nullable=False, comment="Polígono GeoJSON")
+    descripcion_parcela: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    nombre_campo: Mapped[str] = mapped_column(String(255), ForeignKey("campo.nombre_campo"), nullable=False)
+
+    campo: Mapped["Campo"] = relationship("Campo")
+
+
+class Regla(Base):
+    __tablename__ = "regla"
+
+    nombre_regla: Mapped[str] = mapped_column(String(255), primary_key=True)
+    nombre_campo: Mapped[str] = mapped_column(String(255), primary_key=True)
+    formula: Mapped[str] = mapped_column(Text, nullable=False, comment="Expresión de la regla agroclimática")
+    descripcion_regla: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    umbral: Mapped[float] = mapped_column(Float, nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["nombre_campo"],
+            ["campo.nombre_campo"],
+        ),
+    )
+
+
+class VentanaTemporal(Base):
+    __tablename__ = "ventana_temporal"
+
+    fecha_ini: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    fecha_fin: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    nombre_parcela: Mapped[str] = mapped_column(String(255), ForeignKey("parcela.nombre_parcela"), nullable=False)
+
+    parcela: Mapped["Parcela"] = relationship("Parcela")
+
+
+class Alerta(Base):
+    __tablename__ = "alerta"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    fecha_emision: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    mensaje: Mapped[str] = mapped_column(Text, nullable=False)
+    nombre_parcela: Mapped[str] = mapped_column(String(255), ForeignKey("parcela.nombre_parcela"), nullable=False)
+    email_usuario: Mapped[str] = mapped_column(String(255), ForeignKey("usuario.email_usuario"), nullable=False)
+
+    parcela: Mapped["Parcela"] = relationship("Parcela")
+    usuario: Mapped["Usuario"] = relationship("Usuario")
+
+
+# ──────────────────────────────────────────────
+# Asociaciones (Tablas Intermedias M:N)
+# ──────────────────────────────────────────────
+
+
+class UsuarioRolCampo(Base):
+    __tablename__ = "usuario_rol_campo"
+
+    email_usuario: Mapped[str] = mapped_column(String(255), ForeignKey("usuario.email_usuario"), primary_key=True)
+    nombre_rol: Mapped[str] = mapped_column(String(100), ForeignKey("rol.nombre_rol"), primary_key=True)
+    nombre_campo: Mapped[str] = mapped_column(String(255), ForeignKey("campo.nombre_campo"), primary_key=True)
+
+    usuario: Mapped["Usuario"] = relationship("Usuario")
+    rol: Mapped["Rol"] = relationship("Rol")
+    campo: Mapped["Campo"] = relationship("Campo")
+
+
+class ParcelaImagenSatelital(Base):
+    __tablename__ = "parcela_imagen_satelital"
+
+    id_imagen: Mapped[str] = mapped_column(String(255), ForeignKey("imagen_satelital.id_imagen"), primary_key=True)
+    nombre_parcela: Mapped[str] = mapped_column(String(255), ForeignKey("parcela.nombre_parcela"), primary_key=True)
+    indice_ndvi: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="Normalized Difference Vegetation Index (-1 a 1)")
+    indice_ndmi: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="Normalized Difference Moisture Index (-1 a 1)")
+
+    imagen: Mapped["ImagenSatelital"] = relationship("ImagenSatelital")
+    parcela: Mapped["Parcela"] = relationship("Parcela")
+
+
+class RegistroCultivo(Base):
+    __tablename__ = "registro_cultivo"
+
+    nombre_parcela: Mapped[str] = mapped_column(String(255), ForeignKey("parcela.nombre_parcela"), primary_key=True)
+    nombre_cultivo: Mapped[str] = mapped_column(String(255), ForeignKey("cultivo.nombre_cultivo"), primary_key=True)
+    fecha_siembra: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    fecha_cosecha: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    parcela: Mapped["Parcela"] = relationship("Parcela")
+    cultivo: Mapped["Cultivo"] = relationship("Cultivo")
+
+
+class SensorParcela(Base):
+    __tablename__ = "sensor_parcela"
+
+    nombre_codigo_sensor: Mapped[str] = mapped_column(String(255), ForeignKey("sensor.nombre_codigo_sensor"), primary_key=True)
+    nombre_parcela: Mapped[str] = mapped_column(String(255), ForeignKey("parcela.nombre_parcela"), primary_key=True)
+    nombre_campo: Mapped[str] = mapped_column(String(255), ForeignKey("campo.nombre_campo"), nullable=False)
+    fecha_instalacion: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    fecha_retiro: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    sensor: Mapped["Sensor"] = relationship("Sensor")
+    parcela: Mapped["Parcela"] = relationship("Parcela")
+    campo: Mapped["Campo"] = relationship("Campo")
+
+
+class Prediccion(Base):
+    __tablename__ = "prediccion"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    fecha_emision: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    resultado: Mapped[str] = mapped_column(Text, nullable=False)
+    fecha_ini: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    fecha_fin: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    nombre_regla: Mapped[str] = mapped_column(String(255), nullable=False)
+    nombre_campo: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["nombre_regla", "nombre_campo"],
+            ["regla.nombre_regla", "regla.nombre_campo"],
+        ),
+        ForeignKeyConstraint(
+            ["fecha_ini", "fecha_fin"],
+            ["ventana_temporal.fecha_ini", "ventana_temporal.fecha_fin"],
+        ),
+    )
