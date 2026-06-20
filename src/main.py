@@ -3,16 +3,14 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from slowapi.middleware import SlowAPIMiddleware
 
+from core.config import settings
+from infrastructure.relational_repo.database import Database
+from infrastructure.relational_repo.repository import RelationalRepository
 from infrastructure.time_series_repo.influx_client import TimeSeriesRepository
 from modules.analytics_engine.router import router as analytics_router
 from modules.analytics_engine.tasks import run_batch_diario
 from modules.external_data_gateway.router import router as external_data_router
-from modules.auth.dependencies import init_db
-from modules.auth.router import router as auth_router
-from modules.security.core.exceptions import register_exception_handlers
-from modules.security.core.limiter import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +29,15 @@ async def lifespan(app: FastAPI):
 
     app.state.time_series_repo = repo
 
-    await init_db()
+    db: Database | None = None
+    try:
+        db = Database(dsn=settings.database_dsn, echo=settings.database_echo)
+        await db.create_tables()
+        app.state.relational_repo = RelationalRepository(db.session_factory)
+        logger.info("Base de datos relacional conectada exitosamente")
+    except Exception as e:
+        logger.warning("Base de datos relacional no disponible: %s", e)
+        app.state.relational_repo = None
 
     async def _ejecutar_batch_diario():
         while True:
@@ -52,6 +58,8 @@ async def lifespan(app: FastAPI):
         _tarea_batch.cancel()
     if repo is not None:
         await repo.cerrar_conexion()
+    if db is not None:
+        await db.close()
 
 
 app = FastAPI(
@@ -61,16 +69,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ── Rate limiting (Auth Controller) ──
-app.state.limiter = limiter
-app.add_middleware(SlowAPIMiddleware)
-
-# ── Exception handlers (Security Controller) ──
-register_exception_handlers(app)
-
 app.include_router(external_data_router)
 app.include_router(analytics_router)
-app.include_router(auth_router)  # POST /auth/login, /auth/refresh, /auth/reset-*
 
 
 @app.get("/health")

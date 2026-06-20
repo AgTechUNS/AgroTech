@@ -10,8 +10,9 @@ redis>=4.2.0
 sendgrid>=6.10.0,<7
 twilio>=8.0.0,<9
 # Auth & Security Controller
-sqlalchemy[asyncio]>=2.0,<3       # ORM exclusivo del Auth Controller (tabla usuarios)
+sqlalchemy[asyncio]>=2.0,<3       # ORM relacional (Auth + RelationalRepository)
 aiosqlite>=0.20.0,<1              # Driver SQLite async (solo desarrollo local, reemplazar por asyncpg en prod)
+asyncpg>=0.29.0,<1                # Driver PostgreSQL async (producción)
 passlib[bcrypt]>=1.7,<2           # Hashing de contraseñas con bcrypt
 python-jose[cryptography]>=3.0,<4 # Firma y verificación de JWT (HS256/RS256)
 slowapi>=0.1.9,<1                 # Rate limiting por IP sobre FastAPI
