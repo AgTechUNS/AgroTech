@@ -46,5 +46,17 @@
     "operador": ">=",
     "valor": 123,
     "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "id": "cfe3f41a-4cc7-4eae-9e8f-d7f3350fc795",
+    "nombre": "Alerta Cultivo Gay",
+    "descripcion": "esta cultivo se esta volviendo gay",
+    "metrica": "temperatura",
+    "operador": ">=",
+    "umbral": 45,
+    "formula": "temperatura ≥ 45°C",
+    "nombreCampo": "Campo Prueba 1",
+    "habilitada": true,
+    "adminEmail": "test@agtechuns.com"
   }
 ]

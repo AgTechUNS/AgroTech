@@ -82,13 +82,36 @@ export const SEED_PARCELAS: Parcela[] = [
 ];
 
 export const SEED_REGLAS: Regla[] = [
-  { metrica: "temperatura", operador: ">=", valor: 38.0, adminEmail: ADMIN1 },
-  { metrica: "humedad_suelo", operador: "<=", valor: 20.0, adminEmail: ADMIN1 },
-  { metrica: "precipitacion", operador: "<", valor: 5.0, adminEmail: ADMIN1 },
-  { metrica: "viento", operador: ">=", valor: 50.0, adminEmail: ADMIN1 },
-  { metrica: "ndvi", operador: "<=", valor: 0.3, adminEmail: ADMIN1 },
-  { metrica: "temperatura", operador: ">=", valor: 35.0, adminEmail: ADMIN2 },
-  { metrica: "humedad_suelo", operador: "<=", valor: 25.0, adminEmail: ADMIN2 },
+  {
+    id: "regla-001", nombre: "Alerta de helada", descripcion: "Detecta temperaturas peligrosamente bajas",
+    metrica: "temperatura", operador: "<", umbral: 2.0, formula: "temperatura < 2.0°C",
+    nombreCampo: "Campo Los Pinos", habilitada: true, adminEmail: ADMIN1,
+  },
+  {
+    id: "regla-002", nombre: "Estrés hídrico", descripcion: "Alerta cuando la humedad del suelo es crítica",
+    metrica: "humedad_suelo", operador: "<=", umbral: 20.0, formula: "humedad_suelo ≤ 20.0%",
+    nombreCampo: "Campo Los Pinos", habilitada: true, adminEmail: ADMIN1,
+  },
+  {
+    id: "regla-003", nombre: "Sequía prolongada", descripcion: "Alerta por falta de precipitaciones",
+    metrica: "precipitacion", operador: "<", umbral: 5.0, formula: "precipitacion < 5.0mm",
+    nombreCampo: "Campo Los Pinos", habilitada: false, adminEmail: ADMIN1,
+  },
+  {
+    id: "regla-004", nombre: "Vientos fuertes", descripcion: "Alerta por ráfagas de viento peligrosas",
+    metrica: "viento", operador: ">=", umbral: 50.0, formula: "viento ≥ 50.0km/h",
+    nombreCampo: "Campo Los Pinos", habilitada: true, adminEmail: ADMIN1,
+  },
+  {
+    id: "regla-005", nombre: "Estrés térmico calor", descripcion: "Alerta por temperaturas extremas",
+    metrica: "temperatura", operador: ">=", umbral: 35.0, formula: "temperatura ≥ 35.0°C",
+    nombreCampo: "Campo La Esperanza", habilitada: true, adminEmail: ADMIN2,
+  },
+  {
+    id: "regla-006", nombre: "Estrés hídrico", descripcion: "Alerta cuando la humedad del suelo es crítica",
+    metrica: "humedad_suelo", operador: "<=", umbral: 25.0, formula: "humedad_suelo ≤ 25.0%",
+    nombreCampo: "Campo La Esperanza", habilitada: true, adminEmail: ADMIN2,
+  },
 ];
 
 export const SEED_SENSORES: Sensor[] = [

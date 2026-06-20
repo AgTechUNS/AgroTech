@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { crearRegla } from "@/lib/services/reglas";
+import { useParams, useRouter } from "next/navigation";
+import { obtenerRegla, editarRegla } from "@/lib/services/reglas";
 import { listarCampos } from "@/lib/services/campos";
 import { Campo } from "@/lib/types";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { puedeEditar } from "@/lib/auth/roles";
-import { Card, Button, Input } from "@/components/ui";
+import { Card, Button, Input, Spinner } from "@/components/ui";
 
 const METRICAS = [
   { value: "temperatura", label: "Temperatura" },
@@ -37,10 +37,14 @@ const OP_SYMBOLS: Record<string, string> = {
   ">=": "≥", "<=": "≤", ">": ">", "<": "<", "==": "=",
 };
 
-export default function CrearReglaPage() {
+export default function EditarReglaPage() {
+  const params = useParams();
   const router = useRouter();
   const { user } = useAuthContext();
+  const id = params.id as string;
+
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [campos, setCampos] = useState<Campo[]>([]);
   const [nombre, setNombre] = useState("");
@@ -55,11 +59,22 @@ export default function CrearReglaPage() {
   }, [user, router]);
 
   useEffect(() => {
-    listarCampos(1, 100).then((res) => {
-      setCampos(res.data);
-      if (res.data.length > 0) setNombreCampo(res.data[0].nombreCampo);
-    }).catch(() => {});
-  }, []);
+    Promise.all([
+      obtenerRegla(id),
+      listarCampos(1, 100),
+    ])
+      .then(([regla, resCampos]) => {
+        setNombre(regla.nombre);
+        setDescripcion(regla.descripcion);
+        setNombreCampo(regla.nombreCampo);
+        setMetrica(regla.metrica);
+        setOperador(regla.operador);
+        setUmbralStr(String(regla.umbral));
+        setCampos(resCampos.data);
+      })
+      .catch(() => setError("Error al cargar la regla"))
+      .finally(() => setLoading(false));
+  }, [id]);
 
   const umbral = parseFloat(umbralStr);
   const formulaPreview = metrica && operador && !isNaN(umbral)
@@ -75,24 +90,25 @@ export default function CrearReglaPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await crearRegla({ nombre: nombre.trim(), descripcion: descripcion.trim(), metrica, operador, umbral, nombreCampo });
+      await editarRegla(id, { nombre: nombre.trim(), descripcion: descripcion.trim(), metrica, operador, umbral, nombreCampo });
       router.push("/reglas");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al crear la regla.");
+      setError(err instanceof Error ? err.message : "Error al editar la regla.");
     } finally {
       setSubmitting(false);
     }
   }
 
   if (!puedeEditar(user)) return null;
+  if (loading) return <Spinner />;
 
   return (
     <div>
       <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>
-        Nueva regla agroclimática
+        Editar regla
       </h1>
       <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>
-        Definí un umbral de evaluación para el pipeline de alertas
+        {nombre}
       </p>
 
       <Card>
@@ -177,7 +193,7 @@ export default function CrearReglaPage() {
 
           <div style={{ display: "flex", gap: "0.8rem" }}>
             <Button type="submit" loading={submitting}>
-              Guardar regla
+              Guardar cambios
             </Button>
             <Button variant="ghost" onClick={() => router.push("/reglas")}>
               Cancelar

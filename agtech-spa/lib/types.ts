@@ -45,9 +45,16 @@ export interface CatalogoCultivo {
 }
 
 export interface Regla {
+  id: string;
+  nombre: string;
+  descripcion: string;
   metrica: string;
   operador: string;
-  valor: number;
+  umbral: number;
+  formula: string;
+  nombreCampo: string;
+  nombreParcela?: string;
+  habilitada: boolean;
   adminEmail: string;
 }
 
