@@ -9,6 +9,8 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 from fastapi import FastAPI
 
 from core.config import settings
+from modules.security.core.exceptions import register_exception_handlers
+from modules.security.core.limiter import limiter
 from infrastructure.relational_repo.database import Database
 from infrastructure.relational_repo.repository import RelationalRepository
 from infrastructure.time_series_repo.influx_client import TimeSeriesRepository
@@ -76,6 +78,9 @@ app = FastAPI(
     version="1.1.0",
     lifespan=lifespan,
 )
+
+app.state.limiter = limiter
+register_exception_handlers(app)
 
 app.include_router(auth_router)
 app.include_router(data_api_router)

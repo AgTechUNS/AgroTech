@@ -164,4 +164,4 @@ class VentanaTemporal(Base):
 
     fecha_ini: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
     fecha_fin: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
-    nombre_parcela: Mapped[str] = mapped_column(String(255), ForeignKey("parcelas.nombre_parcela"), nullable=False)
+    nombre_parcela: Mapped[str] = mapped_column(String(255), nullable=False)
