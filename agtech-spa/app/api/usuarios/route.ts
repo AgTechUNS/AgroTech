@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readAgricultores, addAgricultor, findAgricultor } from "@/lib/data/store";
+import { readUsuarios, addUsuario, findUsuario } from "@/lib/data/store";
 import { getAdminEmail, requireAdmin } from "@/lib/auth/token";
+import { UserRole } from "@/lib/types";
+
+const VALID_ROLES: UserRole[] = ["ADMIN", "AGRONOMO", "PRODUCTOR"];
 
 export async function GET(request: NextRequest) {
   const user = requireAdmin(request);
@@ -8,7 +11,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "No autorizado" } }, { status: 403 });
   }
   const adminEmail = getAdminEmail(user);
-  const data = readAgricultores(adminEmail);
+  const data = readUsuarios(adminEmail);
   return NextResponse.json({ data });
 }
 
@@ -21,25 +24,32 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { email, nombre, password } = body;
+    const { email, rol } = body;
 
-    if (!email || !nombre || !password) {
+    if (!email || !rol) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "email, nombre y password son obligatorios" } },
+        { error: { code: "VALIDATION_ERROR", message: "email y rol son obligatorios" } },
         { status: 400 }
       );
     }
 
-    const existe = findAgricultor(email);
+    if (!VALID_ROLES.includes(rol)) {
+      return NextResponse.json(
+        { error: { code: "VALIDATION_ERROR", message: `Rol inválido. Valores: ${VALID_ROLES.join(", ")}` } },
+        { status: 400 }
+      );
+    }
+
+    const existe = findUsuario(email);
     if (existe) {
       return NextResponse.json(
-        { error: { code: "CONFLICT", message: "Ya existe un agricultor con ese email" } },
+        { error: { code: "CONFLICT", message: "Ya existe un usuario con ese email" } },
         { status: 409 }
       );
     }
 
-    addAgricultor({ email, nombre, password, rol: "agricultor", adminEmail });
-    return NextResponse.json({ message: "Agricultor creado exitosamente" }, { status: 201 });
+    addUsuario({ email, nombre: email, password: "12345678", rol, adminEmail });
+    return NextResponse.json({ message: "Usuario creado exitosamente" }, { status: 201 });
   } catch {
     return NextResponse.json(
       { error: { code: "UNKNOWN_ERROR", message: "Error al procesar la solicitud" } },

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateAgricultor, deleteAgricultor, findAgricultor } from "@/lib/data/store";
+import { updateUsuario, deleteUsuario, findUsuario } from "@/lib/data/store";
 import { getAdminEmail, requireAdmin } from "@/lib/auth/token";
 
 export async function PUT(
@@ -15,25 +15,25 @@ export async function PUT(
   try {
     const email = decodeURIComponent(params.email);
     const body = await request.json();
-    const { nombre, password } = body;
+    const { nombre, password, rol } = body;
 
-    const existe = findAgricultor(email);
+    const existe = findUsuario(email);
     if (!existe) {
       return NextResponse.json(
-        { error: { code: "NOT_FOUND", message: "Agricultor no encontrado" } },
+        { error: { code: "NOT_FOUND", message: "Usuario no encontrado" } },
         { status: 404 }
       );
     }
 
     if (existe.adminEmail && existe.adminEmail !== adminEmail) {
       return NextResponse.json(
-        { error: { code: "FORBIDDEN", message: "No puedes editar agricultores de otro administrador" } },
+        { error: { code: "FORBIDDEN", message: "No puedes editar usuarios de otro administrador" } },
         { status: 403 }
       );
     }
 
-    updateAgricultor(email, { nombre, password });
-    return NextResponse.json({ message: "Agricultor actualizado exitosamente" });
+    updateUsuario(email, { nombre, password, rol });
+    return NextResponse.json({ message: "Usuario actualizado exitosamente" });
   } catch {
     return NextResponse.json(
       { error: { code: "UNKNOWN_ERROR", message: "Error al procesar la solicitud" } },
@@ -55,10 +55,10 @@ export async function DELETE(
   try {
     const email = decodeURIComponent(params.email);
 
-    const existe = findAgricultor(email);
+    const existe = findUsuario(email);
     if (!existe) {
       return NextResponse.json(
-        { error: { code: "NOT_FOUND", message: "Agricultor no encontrado" } },
+        { error: { code: "NOT_FOUND", message: "Usuario no encontrado" } },
         { status: 404 }
       );
     }
@@ -72,13 +72,13 @@ export async function DELETE(
 
     if (existe.adminEmail && existe.adminEmail !== adminEmail) {
       return NextResponse.json(
-        { error: { code: "FORBIDDEN", message: "No puedes eliminar agricultores de otro administrador" } },
+        { error: { code: "FORBIDDEN", message: "No puedes eliminar usuarios de otro administrador" } },
         { status: 403 }
       );
     }
 
-    deleteAgricultor(email);
-    return NextResponse.json({ message: "Agricultor eliminado exitosamente" });
+    deleteUsuario(email);
+    return NextResponse.json({ message: "Usuario eliminado exitosamente" });
   } catch {
     return NextResponse.json(
       { error: { code: "UNKNOWN_ERROR", message: "Error al procesar la solicitud" } },

@@ -4,15 +4,23 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { puedeEditar } from "@/lib/auth/roles";
-import { listarAgricultores, editarAgricultor } from "@/lib/services/agricultores";
+import { listarUsuarios, editarUsuario } from "@/lib/services/usuarios";
+import { UserRole } from "@/lib/types";
 import { Card, Button, Spinner } from "@/components/ui";
 
-export default function EditarAgricultorPage() {
+const ROLES: { value: UserRole; label: string }[] = [
+  { value: "ADMIN", label: "Administrador" },
+  { value: "AGRONOMO", label: "Agrónomo" },
+  { value: "PRODUCTOR", label: "Productor" },
+];
+
+export default function EditarUsuarioPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthContext();
   const email = decodeURIComponent(params.email as string);
   const [nombre, setNombre] = useState("");
+  const [rol, setRol] = useState<UserRole>("PRODUCTOR");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -23,14 +31,12 @@ export default function EditarAgricultorPage() {
       router.push("/dashboard");
       return;
     }
-    listarAgricultores()
+    listarUsuarios()
       .then((list) => {
         const a = list.find((x) => x.email === email);
-        if (!a) {
-          router.push("/agricultores");
-          return;
-        }
+        if (!a) { router.push("/usuarios"); return; }
         setNombre(a.nombre);
+        setRol(a.rol);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -42,14 +48,11 @@ export default function EditarAgricultorPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!nombre) {
-      setError("El nombre es obligatorio");
-      return;
-    }
+    if (!nombre) { setError("El nombre es obligatorio"); return; }
     setSaving(true);
     try {
-      await editarAgricultor(email, { nombre, password: password || undefined });
-      router.push("/agricultores");
+      await editarUsuario(email, { nombre, password: password || undefined, rol });
+      router.push("/usuarios");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al editar");
     } finally {
@@ -59,38 +62,35 @@ export default function EditarAgricultorPage() {
 
   return (
     <div>
-      <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem" }}>Editar agricultor</h1>
+      <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem" }}>Editar usuario</h1>
       <p style={{ color: "#64748b", marginBottom: "1rem", fontSize: "0.9rem" }}>{email}</p>
 
       <Card>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 400 }}>
           <div>
-            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem", color: "#374151" }}>
-              Nombre
-            </label>
-            <input
-              type="text"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              style={{ width: "100%", padding: "0.5rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.9rem" }}
-            />
+            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem", color: "#374151" }}>Nombre</label>
+            <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)}
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.9rem" }} />
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem", color: "#374151" }}>Rol</label>
+            <select value={rol} onChange={(e) => setRol(e.target.value as UserRole)}
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.9rem", background: "#fff" }}>
+              {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+            </select>
           </div>
           <div>
             <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem", color: "#374151" }}>
               Nueva contraseña <span style={{ fontWeight: 400, color: "#94a3b8" }}>(dejar vacío para mantener)</span>
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
               style={{ width: "100%", padding: "0.5rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.9rem" }}
-              placeholder="Nueva contraseña"
-            />
+              placeholder="Nueva contraseña" />
           </div>
           {error && <p style={{ color: "#dc2626", fontSize: "0.85rem", margin: 0 }}>{error}</p>}
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</Button>
-            <Button variant="ghost" onClick={() => router.push("/agricultores")}>Cancelar</Button>
+            <Button variant="ghost" onClick={() => router.push("/usuarios")}>Cancelar</Button>
           </div>
         </form>
       </Card>

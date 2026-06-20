@@ -7,7 +7,6 @@ export function saveTokens(accessToken: string, refreshToken: string): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(KEYS.ACCESS_TOKEN, accessToken);
   localStorage.setItem(KEYS.REFRESH_TOKEN, refreshToken);
-  // Sincroniza con cookie para que el middleware (Edge Runtime) pueda leerlo
   document.cookie = "accessToken=1; path=/; SameSite=Lax";
 }
 
@@ -39,8 +38,26 @@ export function isAuthenticated(): boolean {
   return Boolean(getAccessToken());
 }
 
+async function tryRefresh(): Promise<string | null> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return null;
+  try {
+    const res = await fetch("/api/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    saveAccessToken(data.accessToken);
+    return data.accessToken;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-  const token = getAccessToken();
+  let token = getAccessToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> | undefined),
@@ -48,7 +65,13 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
-  return fetch(url, { ...options, headers });
+  let res = await fetch(url, { ...options, headers });
+  if (res.status === 401 && token) {
+    const newToken = await tryRefresh();
+    if (newToken) {
+      headers["Authorization"] = `Bearer ${newToken}`;
+      res = await fetch(url, { ...options, headers });
+    }
+  }
+  return res;
 }
-
-

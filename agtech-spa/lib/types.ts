@@ -47,32 +47,29 @@ export interface CatalogoCultivo {
 export interface Regla {
   id: string;
   nombre: string;
-  descripcion: string;
+  descripcion?: string;
   metrica: string;
   operador: string;
-  umbral: number;
-  formula: string;
-  nombreCampo: string;
-  nombreParcela?: string;
-  habilitada: boolean;
+  valor: number;
   adminEmail: string;
-}
-
-export interface Agricultor {
-  email: string;
-  nombre: string;
-  password: string;
-  rol: "agricultor" | "ADMIN";
-  adminEmail?: string;
+  camposAsignados?: string[];
 }
 
 export interface Usuario {
+  email: string;
+  nombre: string;
+  password: string;
+  rol: "ADMIN" | "AGRONOMO" | "PRODUCTOR";
+  adminEmail?: string;
+}
+
+export interface CreateUsuarioPayload {
   email: string;
   rol: "ADMIN" | "AGRONOMO" | "PRODUCTOR";
 }
 
 export interface LoginRequest {
-  email: string;
+  emailUsuario: string;
   password: string;
 }
 
@@ -92,11 +89,17 @@ export interface AlertaRecomendacion {
   emailUsuario?: string;
 }
 
-export interface RegistroCultivo {
-  nombreCultivo: string;
-  fechaSiembra: string;
-  fechaCosecha?: string;
-  observaciones?: string;
+export interface Prediccion {
+  nombreParcela: string;
+  fecha: string;
+  temperatura_estimada: number;
+  humedad_estimada: number;
+  probabilidad_lluvia: number;
+}
+
+export interface SatelitalData {
+  ndvi: number;
+  humedad_suelo_estimada: number;
 }
 
 export interface Sensor {
@@ -128,10 +131,12 @@ export interface LoginResponse {
   expiresIn: number;
 }
 
+export type UserRole = "ADMIN" | "AGRONOMO" | "PRODUCTOR";
+
 export interface JwtPayload {
   sub: string;
   email: string;
-  role: "ADMIN" | "agricultor";
+  role: UserRole;
   name?: string;
   adminEmail?: string;
   iat: number;

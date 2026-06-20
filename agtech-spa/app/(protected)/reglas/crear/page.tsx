@@ -6,8 +6,8 @@ import { crearRegla } from "@/lib/services/reglas";
 import { listarCampos } from "@/lib/services/campos";
 import { Campo } from "@/lib/types";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { puedeEditar } from "@/lib/auth/roles";
-import { Card, Button, Input } from "@/components/ui";
+import { puedeCrearReglas } from "@/lib/auth/roles";
+import { Card, Button } from "@/components/ui";
 
 const METRICAS = [
   { value: "temperatura", label: "Temperatura" },
@@ -25,57 +25,54 @@ const OPERADORES = [
   { value: "==", label: "= Igual" },
 ];
 
-const METRICA_UNITS: Record<string, string> = {
-  temperatura: "°C",
-  humedad_suelo: "%",
-  precipitacion: "mm",
-  viento: "km/h",
-  ndvi: "",
-};
-
-const OP_SYMBOLS: Record<string, string> = {
-  ">=": "≥", "<=": "≤", ">": ">", "<": "<", "==": "=",
-};
-
 export default function CrearReglaPage() {
   const router = useRouter();
   const { user } = useAuthContext();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [campos, setCampos] = useState<Campo[]>([]);
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
-  const [nombreCampo, setNombreCampo] = useState("");
   const [metrica, setMetrica] = useState(METRICAS[0].value);
   const [operador, setOperador] = useState(OPERADORES[0].value);
-  const [umbralStr, setUmbralStr] = useState("");
+  const [valorStr, setValorStr] = useState("");
+  const [campos, setCampos] = useState<Campo[]>([]);
+  const [camposSeleccionados, setCamposSeleccionados] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!puedeEditar(user)) router.push("/dashboard");
+    if (!puedeCrearReglas(user)) router.push("/dashboard");
   }, [user, router]);
 
   useEffect(() => {
-    listarCampos(1, 100).then((res) => {
-      setCampos(res.data);
-      if (res.data.length > 0) setNombreCampo(res.data[0].nombreCampo);
-    }).catch(() => {});
+    listarCampos(1, 100).then((r) => setCampos(r.data)).catch(() => {});
   }, []);
 
-  const umbral = parseFloat(umbralStr);
-  const formulaPreview = metrica && operador && !isNaN(umbral)
-    ? `${metrica} ${OP_SYMBOLS[operador]} ${umbral}${METRICA_UNITS[metrica] ?? ""}`
-    : null;
+  function toggleCampo(nombreCampo: string) {
+    setCamposSeleccionados((prev) =>
+      prev.includes(nombreCampo)
+        ? prev.filter((c) => c !== nombreCampo)
+        : [...prev, nombreCampo]
+    );
+  }
+
+  if (!puedeCrearReglas(user)) return null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const valor = parseFloat(valorStr);
     if (!nombre.trim()) { setError("El nombre es obligatorio."); return; }
-    if (!nombreCampo) { setError("Seleccioná un campo."); return; }
-    if (isNaN(umbral)) { setError("El umbral debe ser un número."); return; }
+    if (isNaN(valor)) { setError("El valor debe ser un número."); return; }
 
     setSubmitting(true);
     setError(null);
     try {
-      await crearRegla({ nombre: nombre.trim(), descripcion: descripcion.trim(), metrica, operador, umbral, nombreCampo });
+      await crearRegla({
+        nombre: nombre.trim(),
+        descripcion: descripcion.trim() || undefined,
+        metrica,
+        operador,
+        valor,
+        camposAsignados: camposSeleccionados,
+      });
       router.push("/reglas");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear la regla.");
@@ -84,88 +81,71 @@ export default function CrearReglaPage() {
     }
   }
 
-  if (!puedeEditar(user)) return null;
-
   return (
     <div>
-      <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>
-        Nueva regla agroclimática
-      </h1>
-      <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>
-        Definí un umbral de evaluación para el pipeline de alertas
-      </p>
+      <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>Nueva regla agroclimática</h1>
+      <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>Definí un umbral global y asígnalo a los campos</p>
 
       <Card>
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-          <Input
-            label="Nombre de la regla"
-            placeholder="Ej: Alerta de helada"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            required
-          />
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.2rem", maxWidth: 500 }}>
+          <div>
+            <span style={{ fontSize: "0.85rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>Nombre *</span>
+            <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} required
+              placeholder="Ej: Alerta de helada"
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid #ccc", borderRadius: "6px", fontSize: "1rem", boxSizing: "border-box" }} />
+          </div>
 
-          <Input
-            label="Descripción"
-            placeholder="Ej: Detecta temperaturas peligrosamente bajas"
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-          />
+          <div>
+            <span style={{ fontSize: "0.85rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>Descripción</span>
+            <input type="text" value={descripcion} onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Ej: Detecta temperaturas peligrosamente bajas"
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid #ccc", borderRadius: "6px", fontSize: "1rem", boxSizing: "border-box" }} />
+          </div>
 
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Campo</span>
-            <select
-              value={nombreCampo}
-              onChange={(e) => setNombreCampo(e.target.value)}
-              style={{ padding: "0.5rem 0.75rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "1rem", background: "#fff" }}
-              required
-            >
-              <option value="">Seleccioná un campo</option>
-              {campos.map((c) => (
-                <option key={c.nombreCampo} value={c.nombreCampo}>{c.nombreCampo}</option>
-              ))}
+            <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Métrica *</span>
+            <select value={metrica} onChange={(e) => setMetrica(e.target.value)}
+              style={{ padding: "0.5rem 0.75rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "1rem", background: "#fff" }}>
+              {METRICAS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
           </label>
 
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Métrica</span>
-            <select
-              value={metrica}
-              onChange={(e) => setMetrica(e.target.value)}
-              style={{ padding: "0.5rem 0.75rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "1rem", background: "#fff" }}
-            >
-              {METRICAS.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
+            <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Operador *</span>
+            <select value={operador} onChange={(e) => setOperador(e.target.value)}
+              style={{ padding: "0.5rem 0.75rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "1rem", background: "#fff" }}>
+              {OPERADORES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </label>
 
-          <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Operador</span>
-            <select
-              value={operador}
-              onChange={(e) => setOperador(e.target.value)}
-              style={{ padding: "0.5rem 0.75rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "1rem", background: "#fff" }}
-            >
-              {OPERADORES.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </label>
+          <div>
+            <span style={{ fontSize: "0.85rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>Valor umbral *</span>
+            <input type="number" step="0.1" value={valorStr} onChange={(e) => setValorStr(e.target.value)} required
+              placeholder="Ej: 2.0"
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid #ccc", borderRadius: "6px", fontSize: "1rem", boxSizing: "border-box" }} />
+          </div>
 
-          <Input
-            label="Valor umbral"
-            type="number"
-            step="0.1"
-            placeholder="Ej: 2.0"
-            value={umbralStr}
-            onChange={(e) => setUmbralStr(e.target.value)}
-            required
-          />
-
-          {formulaPreview && (
-            <div style={{ background: "#f0f9f0", padding: "0.6rem 0.8rem", borderRadius: "6px", fontSize: "0.9rem", color: "#2e7d32" }}>
-              Fórmula: <code style={{ background: "#dcedc8", padding: "0.15rem 0.4rem", borderRadius: "4px" }}>{formulaPreview}</code>
+          {campos.length > 0 && (
+            <div>
+              <span style={{ fontSize: "0.85rem", fontWeight: 600, display: "block", marginBottom: "0.4rem" }}>Asignar a campos</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                {campos.map((c) => {
+                  const selected = camposSeleccionados.includes(c.nombreCampo);
+                  return (
+                    <label key={c.nombreCampo}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "0.3rem",
+                        padding: "0.3rem 0.6rem", borderRadius: "6px",
+                        background: selected ? "#dbeafe" : "#f8fafc",
+                        border: selected ? "1px solid #3b82f6" : "1px solid #e2e8f0",
+                        cursor: "pointer", fontSize: "0.85rem",
+                      }}>
+                      <input type="checkbox" checked={selected} onChange={() => toggleCampo(c.nombreCampo)} />
+                      {c.nombreCampo}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -176,12 +156,8 @@ export default function CrearReglaPage() {
           )}
 
           <div style={{ display: "flex", gap: "0.8rem" }}>
-            <Button type="submit" loading={submitting}>
-              Guardar regla
-            </Button>
-            <Button variant="ghost" onClick={() => router.push("/reglas")}>
-              Cancelar
-            </Button>
+            <Button type="submit" loading={submitting}>Guardar regla</Button>
+            <Button variant="ghost" onClick={() => router.push("/reglas")}>Cancelar</Button>
           </div>
         </form>
       </Card>

@@ -7,10 +7,10 @@ import dynamic from "next/dynamic";
 import { listarCampos, eliminarCampo } from "@/lib/services/campos";
 import { listarParcelas, eliminarParcela } from "@/lib/services/parcelas";
 import { listarSensores } from "@/lib/services/sensores";
-import { listarReglas, editarRegla, eliminarRegla } from "@/lib/services/reglas";
+import { listarReglas, editarRegla } from "@/lib/services/reglas";
 import { Campo, Parcela, Sensor, Regla } from "@/lib/types";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { puedeEditar } from "@/lib/auth/roles";
+import { puedeEditar, puedeCrearReglas } from "@/lib/auth/roles";
 import { Card, Table, Button, Spinner } from "@/components/ui";
 
 const FieldsMap = dynamic(
@@ -26,7 +26,8 @@ export default function CampoDetallePage() {
   const [campo, setCampo] = useState<Campo | null>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [sensores, setSensores] = useState<Sensor[]>([]);
-  const [reglas, setReglas] = useState<Regla[]>([]);
+  const [todasReglas, setTodasReglas] = useState<Regla[]>([]);
+  const [asignando, setAsignando] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,13 +38,13 @@ export default function CampoDetallePage() {
       ),
       listarParcelas(nombreCampo).then((res) => res.data),
       listarSensores(),
-      listarReglas(1, 50, nombreCampo).then((res) => res.data),
+      listarReglas(),
     ])
-      .then(([c, p, s, r]) => {
+      .then(([c, p, s, reglas]) => {
         setCampo(c);
         setParcelas(p);
         setSensores(s.filter((sen) => sen.nombreCampo === nombreCampo));
-        setReglas(r);
+        setTodasReglas(reglas as Regla[]);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -121,52 +122,6 @@ export default function CampoDetallePage() {
         />
       </Card>
 
-      <Card title={`Reglas (${reglas.length})`} style={{ marginTop: "1.5rem" }}>
-        <Table
-          columns={[
-            { header: "Nombre", accessor: (r: Regla) => r.nombre },
-            { header: "Fórmula", accessor: (r: Regla) => <code style={{ background: "#f1f5f9", padding: "0.15rem 0.4rem", borderRadius: "4px", fontSize: "0.85rem" }}>{r.formula}</code> },
-            {
-              header: "Estado",
-              accessor: (r: Regla) => (
-                <button
-                  onClick={async () => {
-                    if (!puedeEditar(user)) return;
-                    try {
-                      await editarRegla(r.id, { habilitada: !r.habilitada });
-                      setReglas((prev) => prev.map((x) => x.id === r.id ? { ...x, habilitada: !x.habilitada } : x));
-                    } catch { }
-                  }}
-                  style={{
-                    background: r.habilitada ? "#16a34a" : "#94a3b8",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "12px",
-                    padding: "0.2rem 0.8rem",
-                    fontSize: "0.8rem",
-                    cursor: puedeEditar(user) ? "pointer" : "default",
-                    fontWeight: 600,
-                  }}
-                >
-                  {r.habilitada ? "Activa" : "Inactiva"}
-                </button>
-              ),
-            },
-            ...(puedeEditar(user) ? accionesColumnsReglasDetail(setReglas) : []),
-          ]}
-          data={reglas}
-          keyExtractor={(r) => r.id}
-          emptyMessage="No hay reglas asignadas a este campo."
-        />
-        {puedeEditar(user) && (
-          <div style={{ marginTop: "0.8rem" }}>
-            <Link href={`/reglas/crear`}>
-              <Button variant="ghost">+ Asignar nueva regla</Button>
-            </Link>
-          </div>
-        )}
-      </Card>
-
       <Card title={`Sensores (${sensores.length})`} style={{ marginTop: "1.5rem" }}>
         <Table
           columns={[
@@ -188,6 +143,52 @@ export default function CampoDetallePage() {
           data={sensores}
           keyExtractor={(s) => s.deviceId}
           emptyMessage="No hay sensores en este campo. Configuralos desde el LNS Console."
+        />
+      </Card>
+
+      <Card title={`Reglas (${todasReglas.length})`} style={{ marginTop: "1.5rem" }}>
+        <Table
+          columns={[
+            { header: "Nombre", accessor: (r: Regla) => r.nombre },
+            { header: "Métrica", accessor: (r: Regla) => {
+              const labels: Record<string, string> = { temperatura: "Temperatura", humedad_suelo: "Humedad suelo", precipitacion: "Precipitación", viento: "Viento", ndvi: "NDVI" };
+              return labels[r.metrica] ?? r.metrica;
+            }},
+            { header: "Condición", accessor: (r: Regla) => `${r.operador} ${r.valor}` },
+            ...(puedeCrearReglas(user) ? [{
+              header: "Asignada",
+              accessor: (r: Regla) => {
+                const asignada = r.camposAsignados?.includes(nombreCampo) ?? false;
+                const cargando = asignando === r.id;
+                return (
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: cargando ? "wait" : "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={asignada}
+                      disabled={cargando}
+                      onChange={async () => {
+                        setAsignando(r.id);
+                        try {
+                          const nuevos = asignada
+                            ? (r.camposAsignados ?? []).filter((c) => c !== nombreCampo)
+                            : [...(r.camposAsignados ?? []), nombreCampo];
+                          await editarRegla(r.id, { camposAsignados: nuevos });
+                          setTodasReglas((prev) =>
+                            prev.map((x) => x.id === r.id ? { ...x, camposAsignados: nuevos } : x)
+                          );
+                        } catch {}
+                        setAsignando(null);
+                      }}
+                    />
+                    {cargando ? "—" : asignada ? "Sí" : "No"}
+                  </label>
+                );
+              },
+            }] : []),
+          ]}
+          data={todasReglas}
+          keyExtractor={(r) => r.id}
+          emptyMessage="No hay reglas configuradas. Crealas desde la sección Reglas."
         />
       </Card>
     </div>
@@ -223,30 +224,4 @@ function accionesColumnsParcelas(
   }];
 }
 
-function accionesColumnsReglasDetail(
-  setReglas: Dispatch<SetStateAction<Regla[]>>
-): { header: string; accessor: (r: Regla) => ReactNode }[] {
-  return [{
-    header: "Acciones",
-    accessor: (r: Regla) => (
-      <div style={{ display: "flex", gap: "0.4rem" }}>
-        <Link href={`/reglas/${encodeURIComponent(r.id)}/editar`}>
-          <Button variant="ghost" style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem" }}>Editar</Button>
-        </Link>
-        <Button
-          variant="ghost"
-          style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", color: "#e74c3c" }}
-          onClick={async () => {
-            if (!window.confirm(`¿Eliminar la regla "${r.nombre}"?`)) return;
-            try {
-              await eliminarRegla(r.id);
-              setReglas((prev) => prev.filter((x) => x.id !== r.id));
-            } catch { }
-          }}
-        >
-          Eliminar
-        </Button>
-      </div>
-    ),
-  }];
-}
+

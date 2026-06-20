@@ -1,4 +1,4 @@
-import { Campo, Parcela, Regla, Sensor, Agricultor } from "@/lib/types";
+import { Campo, Parcela, Regla, Sensor, Usuario } from "@/lib/types";
 
 const ADMIN1 = "test@agtechuns.com";
 const ADMIN2 = "admin2@ejemplo.com";
@@ -82,36 +82,10 @@ export const SEED_PARCELAS: Parcela[] = [
 ];
 
 export const SEED_REGLAS: Regla[] = [
-  {
-    id: "regla-001", nombre: "Alerta de helada", descripcion: "Detecta temperaturas peligrosamente bajas",
-    metrica: "temperatura", operador: "<", umbral: 2.0, formula: "temperatura < 2.0°C",
-    nombreCampo: "Campo Los Pinos", habilitada: true, adminEmail: ADMIN1,
-  },
-  {
-    id: "regla-002", nombre: "Estrés hídrico", descripcion: "Alerta cuando la humedad del suelo es crítica",
-    metrica: "humedad_suelo", operador: "<=", umbral: 20.0, formula: "humedad_suelo ≤ 20.0%",
-    nombreCampo: "Campo Los Pinos", habilitada: true, adminEmail: ADMIN1,
-  },
-  {
-    id: "regla-003", nombre: "Sequía prolongada", descripcion: "Alerta por falta de precipitaciones",
-    metrica: "precipitacion", operador: "<", umbral: 5.0, formula: "precipitacion < 5.0mm",
-    nombreCampo: "Campo Los Pinos", habilitada: false, adminEmail: ADMIN1,
-  },
-  {
-    id: "regla-004", nombre: "Vientos fuertes", descripcion: "Alerta por ráfagas de viento peligrosas",
-    metrica: "viento", operador: ">=", umbral: 50.0, formula: "viento ≥ 50.0km/h",
-    nombreCampo: "Campo Los Pinos", habilitada: true, adminEmail: ADMIN1,
-  },
-  {
-    id: "regla-005", nombre: "Estrés térmico calor", descripcion: "Alerta por temperaturas extremas",
-    metrica: "temperatura", operador: ">=", umbral: 35.0, formula: "temperatura ≥ 35.0°C",
-    nombreCampo: "Campo La Esperanza", habilitada: true, adminEmail: ADMIN2,
-  },
-  {
-    id: "regla-006", nombre: "Estrés hídrico", descripcion: "Alerta cuando la humedad del suelo es crítica",
-    metrica: "humedad_suelo", operador: "<=", umbral: 25.0, formula: "humedad_suelo ≤ 25.0%",
-    nombreCampo: "Campo La Esperanza", habilitada: true, adminEmail: ADMIN2,
-  },
+  { id: "regla-helada", nombre: "Alerta de helada", descripcion: "Detecta temperaturas bajo cero", metrica: "temperatura", operador: "<", valor: 2.0, adminEmail: ADMIN1, camposAsignados: ["Campo Los Pinos", "Campo El Ombú"] },
+  { id: "regla-estres-hidrico", nombre: "Estrés hídrico", descripcion: "Alerta por humedad del suelo crítica", metrica: "humedad_suelo", operador: "<=", valor: 20.0, adminEmail: ADMIN1, camposAsignados: ["Campo Los Pinos"] },
+  { id: "regla-calor-extremo", nombre: "Calor extremo", descripcion: "Alerta por temperaturas muy altas", metrica: "temperatura", operador: ">=", valor: 35.0, adminEmail: ADMIN1, camposAsignados: ["Campo La Esperanza", "Campo Los Pinos"] },
+  { id: "regla-sequia", nombre: "Sequía prolongada", descripcion: "Alerta por falta de lluvias", metrica: "precipitacion", operador: "<", valor: 5.0, adminEmail: ADMIN2, camposAsignados: ["Campo La Esperanza"] },
 ];
 
 export const SEED_SENSORES: Sensor[] = [
@@ -123,8 +97,9 @@ export const SEED_SENSORES: Sensor[] = [
   { deviceId: "SNS-006", nombreCampo: "Campo La Esperanza", nombreParcela: "Lote A", tipo: "lluvia", activo: true, adminEmail: ADMIN2 },
 ];
 
-export const SEED_AGRICULTORES: Agricultor[] = [
+export const SEED_USUARIOS: Usuario[] = [
   { email: "test@agtechuns.com", nombre: "Admin", password: "12345678", rol: "ADMIN" },
   { email: "admin2@ejemplo.com", nombre: "Admin Dos", password: "12345678", rol: "ADMIN" },
-  { email: "agricultor@ejemplo.com", nombre: "Agricultor Uno", password: "12345678", rol: "agricultor", adminEmail: ADMIN1 },
+  { email: "agronomo@ejemplo.com", nombre: "Agrónomo Uno", password: "12345678", rol: "AGRONOMO", adminEmail: ADMIN1 },
+  { email: "productor@ejemplo.com", nombre: "Productor Uno", password: "12345678", rol: "PRODUCTOR", adminEmail: ADMIN1 },
 ];

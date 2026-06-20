@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { roleLabel } from "@/lib/auth/roles";
 
 interface NavSubItem {
   label: string;
@@ -14,6 +15,7 @@ interface NavItem {
   href: string;
   icon: string;
   adminOnly?: boolean;
+  agronomoOnly?: boolean;
   sub?: NavSubItem[];
 }
 
@@ -23,20 +25,26 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Catálogos", href: "#", icon: "⚙️", sub: [
     { label: "Cultivos", href: "/cultivos" },
     { label: "Reglas", href: "/reglas" },
-    { label: "Sensores", href: "/sensores" },
   ]},
+  { label: "Analítica", href: "#", icon: "📈", agronomoOnly: true, sub: [
+    { label: "Alertas y Recomendaciones", href: "/analytics/recomendaciones" },
+    { label: "Predicciones", href: "/analytics/predicciones" },
+  ]},
+  { label: "Datos externos", href: "/external-data", icon: "🛰️", agronomoOnly: true },
   { label: "Administración", href: "#", icon: "🔧", adminOnly: true, sub: [
-    { label: "Agricultores", href: "/agricultores" },
-  ]},
-  { label: "Analítica", href: "#", icon: "📈", sub: [
-    { label: "Alertas", href: "/alertas" },
-    { label: "Predicciones", href: "/predicciones" },
+    { label: "Usuarios", href: "/usuarios" },
   ]},
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuthContext();
+
+  function canSee(item: NavItem): boolean {
+    if (item.adminOnly && user?.role !== "ADMIN") return false;
+    if (item.agronomoOnly && user?.role !== "ADMIN" && user?.role !== "AGRONOMO") return false;
+    return true;
+  }
 
   return (
     <aside
@@ -59,9 +67,7 @@ export function Sidebar() {
       </div>
 
       <nav style={{ flex: 1, padding: "0.8rem", overflowY: "auto" }}>
-        {NAV_ITEMS
-          .filter((item) => !item.adminOnly || user?.role === "ADMIN")
-          .map((item) => {
+        {NAV_ITEMS.filter(canSee).map((item) => {
           const isActive = (item.sub ? item.sub.some((s) => pathname === s.href) : pathname.startsWith(item.href));
           return (
             <div key={item.label} style={{ marginBottom: "0.3rem" }}>
@@ -135,7 +141,7 @@ export function Sidebar() {
           {user?.email}
         </div>
         <div style={{ marginBottom: "0.6rem", color: "#64748b", fontSize: "0.8rem" }}>
-          Rol: {user?.role ?? "—"}
+          Rol: {user?.role ? roleLabel(user.role) : "—"}
         </div>
         <button
           onClick={logout}

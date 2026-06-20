@@ -1,62 +1,55 @@
 [
   {
+    "id": "regla-005",
+    "nombre": "Estrés térmico calor",
+    "descripcion": "Alerta por temperaturas extremas",
     "metrica": "temperatura",
     "operador": ">=",
-    "valor": 38,
-    "adminEmail": "test@agtechuns.com"
+    "umbral": 35,
+    "formula": "temperatura ≥ 35.0°C",
+    "nombreCampo": "Campo La Esperanza",
+    "habilitada": true,
+    "adminEmail": "admin2@ejemplo.com",
+    "camposAsignados": []
   },
   {
+    "id": "regla-006",
+    "nombre": "Estrés hídrico",
+    "descripcion": "Alerta cuando la humedad del suelo es crítica",
     "metrica": "humedad_suelo",
     "operador": "<=",
-    "valor": 20,
-    "adminEmail": "test@agtechuns.com"
+    "umbral": 25,
+    "formula": "humedad_suelo ≤ 25.0%",
+    "nombreCampo": "Campo La Esperanza",
+    "habilitada": true,
+    "adminEmail": "admin2@ejemplo.com",
+    "camposAsignados": []
   },
   {
-    "metrica": "precipitacion",
-    "operador": "<",
-    "valor": 5,
-    "adminEmail": "test@agtechuns.com"
-  },
-  {
-    "metrica": "viento",
-    "operador": ">=",
-    "valor": 50,
-    "adminEmail": "test@agtechuns.com"
-  },
-  {
-    "metrica": "ndvi",
-    "operador": "<=",
-    "valor": 0.3,
-    "adminEmail": "test@agtechuns.com"
-  },
-  {
-    "metrica": "temperatura",
-    "operador": ">=",
-    "valor": 35,
-    "adminEmail": "admin2@ejemplo.com"
-  },
-  {
-    "metrica": "humedad_suelo",
-    "operador": "<=",
-    "valor": 25,
-    "adminEmail": "admin2@ejemplo.com"
-  },
-  {
-    "metrica": "temperatura",
-    "operador": ">=",
-    "valor": 123,
-    "adminEmail": "test@agtechuns.com"
-  },
-  {
-    "id": "cfe3f41a-4cc7-4eae-9e8f-d7f3350fc795",
+    "id": "045123fd-8d9d-4865-adf2-d2b162a83505",
     "nombre": "Alerta Cultivo Gay",
-    "descripcion": "esta cultivo se esta volviendo gay",
+    "descripcion": "CUIDADO el cultivo se esta homosexualizando",
     "metrica": "temperatura",
     "operador": ">=",
     "umbral": 45,
     "formula": "temperatura ≥ 45°C",
     "nombreCampo": "Campo Prueba 1",
     "habilitada": true,
-    "adminEmail": "test@agtechuns.com"
+    "adminEmail": "test@agtechuns.com",
+    "camposAsignados": [
+      "Campo Los Pinos",
+      "Campo Prueba 1"
+    ],
+    "valor": 12
+  },
+  {
+    "id": "c20a82b2-6673-4985-b0db-1548e806cfb4",
+    "nombre": "Alerta Humedad",
+    "descripcion": "1231",
+    "metrica": "humedad_suelo",
+    "operador": ">=",
+    "valor": 99,
+    "adminEmail": "test@agtechuns.com",
+    "camposAsignados": []
   }
 ]

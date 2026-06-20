@@ -65,7 +65,6 @@ export default function CamposListPage() {
                   </Link>
                 )},
                 { header: "Descripción", accessor: (c: Campo) => c.descripcionCampo ?? "—" },
-                { header: "Coordenadas", accessor: () => "GeoJSON" },
                 ...(puedeEditar(user)
                   ? [{
                       header: "Acciones",
