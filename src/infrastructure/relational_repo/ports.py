@@ -160,7 +160,7 @@ class RelationalRepositoryInterface(Protocol):
 
     # ── Alertas ───────────────────────────────────────────────
     async def create_alerta(
-        self, fecha_emision: datetime, mensaje: str, nombre_parcela: str, email_usuario: str
+        self, fecha_emision: datetime, mensaje: str, nombre_parcela: str, email_usuario: str | None = None
     ) -> models.Alerta:
         ...
 

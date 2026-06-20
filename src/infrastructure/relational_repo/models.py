@@ -146,11 +146,8 @@ class Alerta(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     fecha_emision: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     mensaje: Mapped[str] = mapped_column(Text, nullable=False)
-    nombre_parcela: Mapped[str] = mapped_column(String(255), ForeignKey("parcela.nombre_parcela"), nullable=False)
-    email_usuario: Mapped[str] = mapped_column(String(255), ForeignKey("usuario.email_usuario"), nullable=False)
-
-    parcela: Mapped["Parcela"] = relationship("Parcela")
-    usuario: Mapped["Usuario"] = relationship("Usuario")
+    nombre_parcela: Mapped[str] = mapped_column(String(255), nullable=False)
+    email_usuario: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     def __repr__(self):
         return f"<Alerta #{self.id} parcela={self.nombre_parcela!r}>"

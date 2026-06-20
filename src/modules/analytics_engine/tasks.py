@@ -1,5 +1,7 @@
+import logging
 from datetime import datetime, timedelta, timezone
 
+from infrastructure.relational_repo.repository import RelationalRepository
 from infrastructure.time_series_repo.influx_client import TimeSeriesRepository
 from modules.analytics_engine.engine import (
     _calcular_promedio,
@@ -8,12 +10,15 @@ from modules.analytics_engine.engine import (
 )
 from modules.analytics_engine.models import AlertaRecomendacion
 from modules.iot_ingestion.query_models import TelemetryQuery
+from modules.notification_component import EventType, notify, NotificationJob
 
 
 async def generar_recomendaciones_diarias(
     lecturas_historicas: list[dict],
     nombreParcela: str,
+    nombreCampo: str | None = None,
     emailUsuario: str | None = None,
+    relational_repo: RelationalRepository | None = None,
 ) -> list[AlertaRecomendacion]:
     recomendaciones: list[AlertaRecomendacion] = []
     metricas = [
@@ -38,11 +43,33 @@ async def generar_recomendaciones_diarias(
                     emailUsuario=emailUsuario,
                 )
             )
+            event_type = EventType.HYDRIC_STRESS if direccion == "bajo" else EventType.HEAT_STRESS
+            field_id = f"{nombreCampo}/{nombreParcela}" if nombreCampo else nombreParcela
+            try:
+                await notify(NotificationJob(
+                    event_type=event_type,
+                    field_id=field_id,
+                    value=promedio,
+                    threshold=umbral,
+                ))
+            except Exception:
+                logging.getLogger(__name__).warning("Notificación batch no enviada para %s: %s", nombreParcela, campo, exc_info=True)
+            if relational_repo is not None:
+                try:
+                    await relational_repo.create_alerta(
+                        fecha_emision=datetime.now(timezone.utc),
+                        mensaje=f"Recomendación diaria para {nombreParcela}: {campo} promedio {promedio:.1f} (umbral {umbral:.1f})",
+                        nombre_parcela=nombreParcela,
+                        email_usuario=emailUsuario,
+                    )
+                except Exception:
+                    logging.getLogger(__name__).warning("Alerta batch no persistida para %s: %s", nombreParcela, campo, exc_info=True)
     return recomendaciones
 
 
 async def run_batch_diario(
     repo: TimeSeriesRepository,
+    relational_repo: RelationalRepository | None = None,
 ) -> list[AlertaRecomendacion]:
     ahora = datetime.now(timezone.utc)
     query = TelemetryQuery(
@@ -66,6 +93,8 @@ async def run_batch_diario(
         recomendaciones = await generar_recomendaciones_diarias(
             lecturas_historicas=lecturas_grupo,
             nombreParcela=parcela,
+            nombreCampo=campo,
+            relational_repo=relational_repo,
         )
         todas.extend(recomendaciones)
     return todas

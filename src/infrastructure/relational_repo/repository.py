@@ -339,7 +339,7 @@ class RelationalRepository:
 
     # ── Alertas ───────────────────────────────────────────────
 
-    async def create_alerta(self, fecha_emision: datetime, mensaje: str, nombre_parcela: str, email_usuario: str) -> models.Alerta:
+    async def create_alerta(self, fecha_emision: datetime, mensaje: str, nombre_parcela: str, email_usuario: str | None = None) -> models.Alerta:
         alerta = models.Alerta(fecha_emision=fecha_emision, mensaje=mensaje, nombre_parcela=nombre_parcela, email_usuario=email_usuario)
         async with self._session_factory() as session:
             session.add(alerta)

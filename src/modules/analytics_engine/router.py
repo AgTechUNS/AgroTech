@@ -1,8 +1,9 @@
 import logging
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
+from infrastructure.relational_repo.repository import RelationalRepository
 from infrastructure.time_series_repo.influx_client import TimeSeriesRepository
 from modules.analytics_engine.engine import (
     evaluar_umbral_humedad,
@@ -15,12 +16,15 @@ from modules.analytics_engine.models import (
     Prediccion,
     PrediccionesResponse,
     RecomendacionesResponse,
+    ReglaRequest,
+    ReglaResponse,
 )
 from modules.external_data_gateway.gateway import (
     fetch_satellite_indices,
     fetch_weather,
 )
 from modules.iot_ingestion.query_models import TelemetryQuery
+from modules.notification_component import notify, NotificationJob
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/campos", tags=["Analítica"])
@@ -35,6 +39,19 @@ def _verificar_repo(repo: TimeSeriesRepository | None) -> TimeSeriesRepository:
         raise HTTPException(
             status_code=503,
             detail="Base de datos temporal no disponible. Intente más tarde.",
+        )
+    return repo
+
+
+def _obtener_relational_repo(request: Request) -> RelationalRepository | None:
+    return getattr(request.app.state, "relational_repo", None)
+
+
+def _verificar_relational_repo(repo: RelationalRepository | None) -> RelationalRepository:
+    if repo is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Base de datos relacional no disponible. Intente más tarde.",
         )
     return repo
 
@@ -56,6 +73,7 @@ async def consultar_recomendaciones(
     page: int = Query(1, ge=1, description="Número de página"),
     limit: int = Query(20, ge=1, le=100, description="Elementos por página"),
     repo: TimeSeriesRepository | None = Depends(_obtener_repo),
+    relational_repo: RelationalRepository | None = Depends(_obtener_relational_repo),
 ):
     repo = _verificar_repo(repo)
     query = TelemetryQuery(
@@ -70,12 +88,48 @@ async def consultar_recomendaciones(
         lecturas, nombreParcela, umbral_humedad, ventana_minutos
     )
     if resultado_humedad:
-        alertas.append(resultado_humedad)
+        alertas.append(resultado_humedad.alerta)
+        try:
+            await notify(NotificationJob(
+                event_type=resultado_humedad.event_type,
+                field_id=f"{nombreCampo}/{nombreParcela}",
+                value=resultado_humedad.valor_calculado,
+                threshold=resultado_humedad.umbral,
+            ))
+        except Exception:
+            logger.warning("Notificación no enviada (humedad): %s", resultado_humedad.alerta.mensaje, exc_info=True)
+        if relational_repo is not None:
+            try:
+                await relational_repo.create_alerta(
+                    fecha_emision=resultado_humedad.alerta.fechaEmision,
+                    mensaje=resultado_humedad.alerta.mensaje,
+                    nombre_parcela=nombreParcela,
+                )
+            except Exception:
+                logger.warning("Alerta no persistida (humedad): %s", resultado_humedad.alerta.mensaje, exc_info=True)
     resultado_temperatura = await evaluar_umbral_temperatura(
         lecturas, nombreParcela, umbral_temperatura, ventana_minutos
     )
     if resultado_temperatura:
-        alertas.append(resultado_temperatura)
+        alertas.append(resultado_temperatura.alerta)
+        try:
+            await notify(NotificationJob(
+                event_type=resultado_temperatura.event_type,
+                field_id=f"{nombreCampo}/{nombreParcela}",
+                value=resultado_temperatura.valor_calculado,
+                threshold=resultado_temperatura.umbral,
+            ))
+        except Exception:
+            logger.warning("Notificación no enviada (temperatura): %s", resultado_temperatura.alerta.mensaje, exc_info=True)
+        if relational_repo is not None:
+            try:
+                await relational_repo.create_alerta(
+                    fecha_emision=resultado_temperatura.alerta.fechaEmision,
+                    mensaje=resultado_temperatura.alerta.mensaje,
+                    nombre_parcela=nombreParcela,
+                )
+            except Exception:
+                logger.warning("Alerta no persistida (temperatura): %s", resultado_temperatura.alerta.mensaje, exc_info=True)
 
     total = len(alertas)
     total_pages = max(1, (total + limit - 1) // limit)
@@ -158,3 +212,52 @@ async def consultar_predicciones(
             totalPages=1,
         ),
     )
+
+
+# ──────────────────────────────────────────────
+# CRUD de reglas (Fase 4)
+# ──────────────────────────────────────────────
+
+
+@router.post("/reglas", status_code=status.HTTP_201_CREATED)
+async def crear_regla(
+    body: ReglaRequest,
+    relational_repo: RelationalRepository | None = Depends(_obtener_relational_repo),
+) -> ReglaResponse:
+    repo = _verificar_relational_repo(relational_repo)
+    regla = await repo.create_regla(
+        nombre_regla=body.nombre_regla,
+        nombre_campo=body.nombre_campo,
+        formula=f"{body.metrica} {body.operador} {body.valor}",
+        umbral=body.valor,
+        descripcion=body.descripcion,
+    )
+    logger.info("Regla creada: %s en campo %s", regla.nombre_regla, regla.nombre_campo)
+    return ReglaResponse(
+        nombre_regla=regla.nombre_regla,
+        nombre_campo=regla.nombre_campo,
+        metrica=body.metrica,
+        operador=body.operador,
+        valor=regla.umbral,
+        descripcion=regla.descripcion_regla,
+    )
+
+
+@router.get("/{nombreCampo}/reglas")
+async def listar_reglas_campo(
+    nombreCampo: str,
+    relational_repo: RelationalRepository | None = Depends(_obtener_relational_repo),
+) -> list[ReglaResponse]:
+    repo = _verificar_relational_repo(relational_repo)
+    reglas = await repo.list_reglas_by_campo(nombreCampo)
+    return [
+        ReglaResponse(
+            nombre_regla=r.nombre_regla,
+            nombre_campo=r.nombre_campo,
+            metrica=r.formula.split()[0] if " " in r.formula else r.formula,
+            operador=r.formula.split()[1] if len(r.formula.split()) > 1 else "",
+            valor=r.umbral,
+            descripcion=r.descripcion_regla,
+        )
+        for r in reglas
+    ]

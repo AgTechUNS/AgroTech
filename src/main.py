@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
             await asyncio.sleep(86400)
             if repo is not None:
                 try:
-                    resultados = await run_batch_diario(repo)
+                    resultados = await run_batch_diario(repo, relational_repo=app.state.relational_repo)
                     logger.info("Batch diario completado: %d recomendaciones", len(resultados))
                 except Exception as e:
                     logger.error("Error en batch diario: %s", e)
