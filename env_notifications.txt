@@ -1,0 +1,25 @@
+# ============================================================
+# Notification Component — agregar este bloque a tu .env
+# ============================================================
+
+# --- Twilio: credenciales REALES (Console > Account Info) ---
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_FROM=+1xxxxxxxxxx          # tu número Twilio (E.164)
+
+# --- Twilio: credenciales de TEST (Console > Account > API keys & tokens) ---
+# Se usan SOLO en el smoke test sin --live. No envían ni cobran.
+TWILIO_TEST_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_TEST_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# --- SendGrid ---
+SENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxxxxxx
+SENDGRID_FROM=alertas@tu-dominio.com   # debe ser un Single Sender VERIFICADO
+SENDGRID_SANDBOX_MODE=true             # true en dev: valida pero no entrega
+
+# --- Destinos de las alertas ---
+ALERT_PHONE=+54911xxxxxxxx     # en cuenta trial: debe estar VERIFICADO
+ALERT_EMAIL=admin@tu-dominio.com
+
+# --- Redis (deduplicación) ---
+REDIS_URL=redis://localhost:6379
