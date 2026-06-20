@@ -36,7 +36,7 @@ export default function ReglasListPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <div>
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>Reglas agroclimáticas</h1>
-          <p style={{ color: "#64748b", margin: "0.3rem 0 0", fontSize: "0.9rem" }}>
+          <p style={{ color: "var(--text-secondary)", margin: "0.3rem 0 0", fontSize: "0.9rem" }}>
             Umbrales globales asignables a los campos
           </p>
         </div>
@@ -67,7 +67,7 @@ export default function ReglasListPage() {
                     </Link>
                     <Button
                       variant="ghost"
-                      style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", color: "#e74c3c" }}
+                      style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", color: "var(--danger)" }}
                       onClick={async () => {
                         if (!window.confirm(`¿Eliminar "${r.nombre}"?`)) return;
                         try {

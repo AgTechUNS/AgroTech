@@ -34,15 +34,15 @@ export default function PrediccionesPage() {
   }
 
   function probLluviaColor(pct: number): string {
-    if (pct >= 70) return "#dc2626";
-    if (pct >= 40) return "#d97706";
-    return "#16a34a";
+    if (pct >= 70) return "var(--danger)";
+    if (pct >= 40) return "var(--warning)";
+    return "var(--success)";
   }
 
   return (
     <div>
       <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>Predicciones a corto plazo</h1>
-      <p style={{ color: "#64748b", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
+      <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
         Pronóstico estimado para los próximos días
       </p>
 
@@ -51,7 +51,7 @@ export default function PrediccionesPage() {
           <div>
             <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem" }}>Campo</label>
             <select value={campoSeleccionado} onChange={(e) => { setCampoSeleccionado(e.target.value); setParcelaSeleccionada(""); }}
-              style={{ padding: "0.4rem 0.75rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "0.9rem", background: "#fff" }}>
+              style={{ padding: "0.4rem 0.75rem", borderRadius: "var(--radius)", border: "1px solid var(--border)", fontSize: "0.9rem", background: "var(--bg-input)", color: "var(--text-primary)" }}>
               <option value="">Seleccionar campo</option>
               {campos.map((c) => <option key={c.nombreCampo} value={c.nombreCampo}>{c.nombreCampo}</option>)}
             </select>
@@ -60,7 +60,7 @@ export default function PrediccionesPage() {
             <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem" }}>Parcela</label>
             <select value={parcelaSeleccionada} onChange={(e) => setParcelaSeleccionada(e.target.value)}
               disabled={!campoSeleccionado}
-              style={{ padding: "0.4rem 0.75rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "0.9rem", background: !campoSeleccionado ? "#f5f5f5" : "#fff" }}>
+              style={{ padding: "0.4rem 0.75rem", borderRadius: "var(--radius)", border: "1px solid var(--border)", fontSize: "0.9rem", background: !campoSeleccionado ? "var(--bg-glass)" : "var(--bg-input)", color: "var(--text-primary)" }}>
               <option value="">Seleccionar parcela</option>
               {parcelas.map((p) => <option key={p.nombreParcela} value={p.nombreParcela}>{p.nombreParcela}</option>)}
             </select>

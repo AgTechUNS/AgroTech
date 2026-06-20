@@ -63,31 +63,31 @@ export default function EditarUsuarioPage() {
   return (
     <div>
       <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem" }}>Editar usuario</h1>
-      <p style={{ color: "#64748b", marginBottom: "1rem", fontSize: "0.9rem" }}>{email}</p>
+      <p style={{ color: "var(--text-secondary)", marginBottom: "1rem", fontSize: "0.9rem" }}>{email}</p>
 
       <Card>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 400 }}>
           <div>
-            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem", color: "#374151" }}>Nombre</label>
+            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem", color: "var(--text-primary)" }}>Nombre</label>
             <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)}
-              style={{ width: "100%", padding: "0.5rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.9rem" }} />
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: "0.9rem", background: "var(--bg-input)", color: "var(--text-primary)" }} />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem", color: "#374151" }}>Rol</label>
+            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem", color: "var(--text-primary)" }}>Rol</label>
             <select value={rol} onChange={(e) => setRol(e.target.value as UserRole)}
-              style={{ width: "100%", padding: "0.5rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.9rem", background: "#fff" }}>
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: "0.9rem", background: "var(--bg-input)", color: "var(--text-primary)" }}>
               {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem", color: "#374151" }}>
-              Nueva contraseña <span style={{ fontWeight: 400, color: "#94a3b8" }}>(dejar vacío para mantener)</span>
+            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem", color: "var(--text-primary)" }}>
+              Nueva contraseña <span style={{ fontWeight: 400, color: "var(--text-muted)" }}>(dejar vacío para mantener)</span>
             </label>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              style={{ width: "100%", padding: "0.5rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.9rem" }}
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: "0.9rem", background: "var(--bg-input)", color: "var(--text-primary)" }}
               placeholder="Nueva contraseña" />
           </div>
-          {error && <p style={{ color: "#dc2626", fontSize: "0.85rem", margin: 0 }}>{error}</p>}
+          {error && <p style={{ color: "var(--danger)", fontSize: "0.85rem", margin: 0 }}>{error}</p>}
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</Button>
             <Button variant="ghost" onClick={() => router.push("/usuarios")}>Cancelar</Button>

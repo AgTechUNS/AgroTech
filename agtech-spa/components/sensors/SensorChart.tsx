@@ -13,7 +13,7 @@ export function SensorChart({ lecturas }: SensorChartProps) {
   const latest = lecturas.slice(-20);
 
   if (latest.length === 0) {
-    return <p style={{ color: "#94a3b8", textAlign: "center", padding: "1rem" }}>Sin datos</p>;
+    return <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "1rem" }}>Sin datos</p>;
   }
 
   const maxVal = Math.max(
@@ -36,7 +36,7 @@ export function SensorChart({ lecturas }: SensorChartProps) {
                     style={{
                       width: 12,
                       height: tempH,
-                      background: "#e74c3c",
+                      background: "var(--danger)",
                       borderRadius: "2px 2px 0 0",
                       transition: "height 0.2s",
                     }}
@@ -48,7 +48,7 @@ export function SensorChart({ lecturas }: SensorChartProps) {
                     style={{
                       width: 12,
                       height: humH,
-                      background: "#2c7be5",
+                      background: "var(--accent)",
                       borderRadius: "2px 2px 0 0",
                       transition: "height 0.2s",
                     }}
@@ -56,14 +56,14 @@ export function SensorChart({ lecturas }: SensorChartProps) {
                   />
                 )}
               </div>
-              <span style={{ fontSize: "0.65rem", color: "#94a3b8", marginTop: "0.25rem", whiteSpace: "nowrap" }}>{label}</span>
+              <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", whiteSpace: "nowrap" }}>{label}</span>
             </div>
           );
         })}
       </div>
-      <div style={{ display: "flex", gap: "1rem", justifyContent: "center", fontSize: "0.8rem", color: "#64748b" }}>
-        <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#e74c3c", borderRadius: 2, marginRight: 4 }} /> Temp</span>
-        <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#2c7be5", borderRadius: 2, marginRight: 4 }} /> Hum</span>
+      <div style={{ display: "flex", gap: "1rem", justifyContent: "center", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+        <span><span style={{ display: "inline-block", width: 10, height: 10, background: "var(--danger)", borderRadius: 2, marginRight: 4 }} /> Temp</span>
+        <span><span style={{ display: "inline-block", width: 10, height: 10, background: "var(--accent)", borderRadius: 2, marginRight: 4 }} /> Hum</span>
       </div>
     </div>
   );

@@ -20,38 +20,47 @@ export default function LoginPage() {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        background: "#f1f5f9",
+        background: "var(--bg-gradient)",
       }}
     >
       <form
         onSubmit={handleSubmit}
         style={{
-          background: "#fff",
-          padding: "2rem",
-          borderRadius: "8px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          background: "var(--bg-glass)",
+          backdropFilter: "var(--blur-lg)",
+          WebkitBackdropFilter: "var(--blur-lg)",
+          padding: "2.5rem",
+          borderRadius: "var(--radius-lg)",
+          border: "1px solid var(--border)",
+          boxShadow: "var(--shadow-lg)",
           width: "100%",
-          maxWidth: 360,
+          maxWidth: 380,
         }}
       >
-        <h1 style={{ margin: "0 0 0.3rem", fontSize: "1.3rem" }}>AgTech UNS</h1>
-        <p style={{ color: "#64748b", margin: "0 0 1.5rem", fontSize: "0.9rem" }}>
-          Ingresá tus credenciales
-        </p>
+        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+          <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🌾</div>
+          <h1 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, letterSpacing: "-0.02em" }}>
+            AgTech UNS
+          </h1>
+          <p style={{ color: "var(--text-muted)", margin: "0.3rem 0 0", fontSize: "0.85rem" }}>
+            Ingresá tus credenciales
+          </p>
+        </div>
 
         {error && (
-          <p
+          <div
             style={{
-              color: "#dc2626",
-              background: "#fef2f2",
-              padding: "0.5rem",
-              borderRadius: "4px",
+              color: "var(--danger)",
+              background: "var(--danger-bg)",
+              padding: "0.6rem 0.75rem",
+              borderRadius: "var(--radius)",
               fontSize: "0.85rem",
               marginBottom: "1rem",
+              border: "1px solid var(--danger)",
             }}
           >
             {error}
-          </p>
+          </div>
         )}
 
         <div style={{ marginBottom: "1rem" }}>
@@ -61,6 +70,7 @@ export default function LoginPage() {
               marginBottom: "0.3rem",
               fontSize: "0.85rem",
               fontWeight: 500,
+              color: "var(--text-secondary)",
             }}
           >
             Email
@@ -72,12 +82,19 @@ export default function LoginPage() {
             required
             style={{
               width: "100%",
-              padding: "0.5rem",
-              border: "1px solid #e2e8f0",
-              borderRadius: "4px",
-              fontSize: "0.9rem",
+              padding: "0.6rem 0.75rem",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius)",
+              fontSize: "0.95rem",
+              fontFamily: "inherit",
               boxSizing: "border-box",
+              background: "var(--bg-input)",
+              color: "var(--text-primary)",
+              outline: "none",
+              transition: "border-color var(--transition)",
             }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
           />
         </div>
 
@@ -88,6 +105,7 @@ export default function LoginPage() {
               marginBottom: "0.3rem",
               fontSize: "0.85rem",
               fontWeight: 500,
+              color: "var(--text-secondary)",
             }}
           >
             Contraseña
@@ -99,12 +117,19 @@ export default function LoginPage() {
             required
             style={{
               width: "100%",
-              padding: "0.5rem",
-              border: "1px solid #e2e8f0",
-              borderRadius: "4px",
-              fontSize: "0.9rem",
+              padding: "0.6rem 0.75rem",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius)",
+              fontSize: "0.95rem",
+              fontFamily: "inherit",
               boxSizing: "border-box",
+              background: "var(--bg-input)",
+              color: "var(--text-primary)",
+              outline: "none",
+              transition: "border-color var(--transition)",
             }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
           />
         </div>
 
@@ -113,23 +138,41 @@ export default function LoginPage() {
           disabled={isLoading}
           style={{
             width: "100%",
-            padding: "0.6rem",
-            background: isLoading ? "#94a3b8" : "#2c7be5",
+            padding: "0.65rem",
+            background: isLoading ? "var(--text-muted)" : "var(--accent)",
             color: "#fff",
             border: "none",
-            borderRadius: "6px",
-            fontSize: "0.9rem",
-            fontWeight: 500,
+            borderRadius: "var(--radius)",
+            fontSize: "0.95rem",
+            fontWeight: 600,
+            fontFamily: "inherit",
             cursor: isLoading ? "not-allowed" : "pointer",
+            opacity: isLoading ? 0.6 : 1,
+            transition: "all var(--transition)",
+            boxShadow: "var(--shadow-sm)",
+          }}
+          onMouseEnter={(e) => {
+            if (!isLoading) {
+              e.currentTarget.style.background = "var(--accent-hover)";
+              e.currentTarget.style.boxShadow = "var(--shadow)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isLoading) {
+              e.currentTarget.style.background = "var(--accent)";
+              e.currentTarget.style.boxShadow = "var(--shadow-sm)";
+            }
           }}
         >
           {isLoading ? "Ingresando…" : "Ingresar"}
         </button>
 
-        <div style={{ marginTop: "1rem", textAlign: "center" }}>
+        <div style={{ marginTop: "1.25rem", textAlign: "center" }}>
           <a
             href="/reset-password"
-            style={{ color: "#2c7be5", fontSize: "0.85rem", textDecoration: "none" }}
+            style={{ color: "var(--text-muted)", fontSize: "0.85rem", transition: "color var(--transition)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
           >
             ¿Olvidaste tu contraseña?
           </a>

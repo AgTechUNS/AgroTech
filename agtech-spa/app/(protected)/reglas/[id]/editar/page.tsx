@@ -93,38 +93,38 @@ export default function EditarReglaPage() {
   return (
     <div>
       <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>Editar regla</h1>
-      <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>{nombre}</p>
+      <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>{nombre}</p>
 
       <Card>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.2rem", maxWidth: 500 }}>
           <div>
             <span style={{ fontSize: "0.85rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>Nombre *</span>
             <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} required
-              style={{ width: "100%", padding: "0.5rem", border: "1px solid #ccc", borderRadius: "6px", fontSize: "1rem", boxSizing: "border-box" }} />
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: "1rem", boxSizing: "border-box", background: "var(--bg-input)", color: "var(--text-primary)" }} />
           </div>
           <div>
             <span style={{ fontSize: "0.85rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>Descripción</span>
             <input type="text" value={descripcion} onChange={(e) => setDescripcion(e.target.value)}
-              style={{ width: "100%", padding: "0.5rem", border: "1px solid #ccc", borderRadius: "6px", fontSize: "1rem", boxSizing: "border-box" }} />
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: "1rem", boxSizing: "border-box", background: "var(--bg-input)", color: "var(--text-primary)" }} />
           </div>
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Métrica *</span>
             <select value={metrica} onChange={(e) => setMetrica(e.target.value)}
-              style={{ padding: "0.5rem 0.75rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "1rem", background: "#fff" }}>
+              style={{ padding: "0.5rem 0.75rem", borderRadius: "var(--radius)", border: "1px solid var(--border)", fontSize: "1rem", background: "var(--bg-input)", color: "var(--text-primary)" }}>
               {METRICAS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Operador *</span>
             <select value={operador} onChange={(e) => setOperador(e.target.value)}
-              style={{ padding: "0.5rem 0.75rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "1rem", background: "#fff" }}>
+              style={{ padding: "0.5rem 0.75rem", borderRadius: "var(--radius)", border: "1px solid var(--border)", fontSize: "1rem", background: "var(--bg-input)", color: "var(--text-primary)" }}>
               {OPERADORES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </label>
           <div>
             <span style={{ fontSize: "0.85rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>Valor umbral *</span>
             <input type="number" step="0.1" value={valorStr} onChange={(e) => setValorStr(e.target.value)} required
-              style={{ width: "100%", padding: "0.5rem", border: "1px solid #ccc", borderRadius: "6px", fontSize: "1rem", boxSizing: "border-box" }} />
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: "1rem", boxSizing: "border-box", background: "var(--bg-input)", color: "var(--text-primary)" }} />
           </div>
 
           {campos.length > 0 && (
@@ -138,8 +138,8 @@ export default function EditarReglaPage() {
                       style={{
                         display: "flex", alignItems: "center", gap: "0.3rem",
                         padding: "0.3rem 0.6rem", borderRadius: "6px",
-                        background: selected ? "#dbeafe" : "#f8fafc",
-                        border: selected ? "1px solid #3b82f6" : "1px solid #e2e8f0",
+                        background: selected ? "var(--accent-bg)" : "var(--bg-glass)",
+                        border: selected ? "1px solid var(--accent)" : "1px solid var(--border)",
                         cursor: "pointer", fontSize: "0.85rem",
                       }}>
                       <input type="checkbox" checked={selected} onChange={() => toggleCampo(c.nombreCampo)} />
@@ -152,7 +152,7 @@ export default function EditarReglaPage() {
           )}
 
           {error && (
-            <div style={{ color: "#e74c3c", fontSize: "0.9rem", background: "#fdecea", padding: "0.6rem", borderRadius: "6px" }}>
+            <div style={{ color: "var(--danger)", fontSize: "0.9rem", background: "var(--danger-bg)", padding: "0.6rem", borderRadius: "var(--radius)" }}>
               {error}
             </div>
           )}

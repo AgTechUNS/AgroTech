@@ -41,17 +41,19 @@ async def init_db() -> None:
         return
 
     async with _db.session_factory() as db:
-        result = await db.execute(
-            select(Usuario).where(Usuario.email_usuario == "agronomo@agtech.com")
-        )
-        if result.scalar_one_or_none() is None:
-            usuario = Usuario(
-                email_usuario="agronomo@agtech.com",
-                nombre="Juan Agrónomo",
-                telefono="1234567890",
-                hash_password=hash_password("password123"),
-                rol="AGRONOMO",
+        seeds = [
+            ("agronomo@agtech.com", "Juan Agrónomo", "1234567890", "password123", "AGRONOMO"),
+            ("test@agtechuns.com", "Admin Test", "1234567890", "12345678", "ADMIN"),
+            ("productor@ejemplo.com", "Pedro Productor", "1234567890", "12345678", "PRODUCTOR"),
+        ]
+        for email, nombre, telefono, pwd, rol in seeds:
+            result = await db.execute(
+                select(Usuario).where(Usuario.email_usuario == email)
             )
-            db.add(usuario)
-            await db.commit()
-            logger.info("Seed: usuario de desarrollo creado | email=agronomo@agtech.com")
+            if result.scalar_one_or_none() is None:
+                db.add(Usuario(
+                    email_usuario=email, nombre=nombre, telefono=telefono,
+                    hash_password=hash_password(pwd), rol=rol,
+                ))
+        await db.commit()
+        logger.info("Seed: %d usuarios de desarrollo creados/verificados", len(seeds))

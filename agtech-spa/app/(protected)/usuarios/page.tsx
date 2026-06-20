@@ -43,7 +43,7 @@ export default function UsuariosPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <div>
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>Usuarios</h1>
-          <p style={{ color: "#64748b", margin: "0.3rem 0 0", fontSize: "0.9rem" }}>
+          <p style={{ color: "var(--text-secondary)", margin: "0.3rem 0 0", fontSize: "0.9rem" }}>
             Gestioná los usuarios de la plataforma
           </p>
         </div>
@@ -63,7 +63,7 @@ export default function UsuariosPage() {
               {
                 header: "Rol",
                 accessor: (a: Usuario) => {
-                  const colors: Record<UserRole, string> = { ADMIN: "#2c7be5", AGRONOMO: "#16a34a", PRODUCTOR: "#d97706" };
+                  const colors: Record<UserRole, string> = { ADMIN: "var(--accent)", AGRONOMO: "var(--success)", PRODUCTOR: "var(--warning)" };
                   return <span style={{ color: colors[a.rol], fontWeight: 600 }}>{roleLabel(a.rol)}</span>;
                 },
               },
@@ -71,7 +71,7 @@ export default function UsuariosPage() {
                 header: "Acciones",
                 accessor: (a: Usuario) =>
                   a.rol === "ADMIN" ? (
-                    <span style={{ color: "#94a3b8", fontSize: "0.85rem" }}>—</span>
+                    <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>—</span>
                   ) : (
                     <div style={{ display: "flex", gap: "0.5rem" }}>
                       <Link href={`/usuarios/${encodeURIComponent(a.email)}/editar`}>
@@ -79,7 +79,7 @@ export default function UsuariosPage() {
                       </Link>
                       <Button
                         variant="ghost"
-                        style={{ fontSize: "0.8rem", padding: "0.3rem 0.6rem", color: "#dc2626" }}
+                        style={{ fontSize: "0.8rem", padding: "0.3rem 0.6rem", color: "var(--danger)" }}
                         onClick={() => handleDelete(a.email)}
                       >
                         Eliminar

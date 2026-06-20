@@ -18,6 +18,8 @@ from modules.auth.router import router as auth_router
 from modules.auth.dependencies import init_db
 from modules.data_api.router import router as data_api_router
 from modules.external_data_gateway.router import router as external_data_router
+from modules.security.core.exceptions import register_exception_handlers
+from modules.security.core.limiter import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +62,8 @@ async def lifespan(app: FastAPI):
     global _tarea_batch
     _tarea_batch = asyncio.create_task(_ejecutar_batch_diario())
 
+    app.state.limiter = limiter
+
     yield
 
     if _tarea_batch is not None:
@@ -76,6 +80,8 @@ app = FastAPI(
     version="1.1.0",
     lifespan=lifespan,
 )
+
+register_exception_handlers(app)
 
 app.include_router(auth_router)
 app.include_router(data_api_router)

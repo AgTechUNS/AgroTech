@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { roleLabel } from "@/lib/auth/roles";
 
 interface NavSubItem {
@@ -22,23 +23,30 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: "📊" },
   { label: "Campos", href: "/campos", icon: "🌾" },
-  { label: "Catálogos", href: "#", icon: "⚙️", sub: [
-    { label: "Cultivos", href: "/cultivos" },
-    { label: "Reglas", href: "/reglas" },
-  ]},
-  { label: "Analítica", href: "#", icon: "📈", agronomoOnly: true, sub: [
-    { label: "Alertas y Recomendaciones", href: "/analytics/recomendaciones" },
-    { label: "Predicciones", href: "/analytics/predicciones" },
-  ]},
+  {
+    label: "Catálogos", href: "#", icon: "⚙️", sub: [
+      { label: "Cultivos", href: "/cultivos" },
+      { label: "Reglas", href: "/reglas" },
+    ],
+  },
+  {
+    label: "Analítica", href: "#", icon: "📈", agronomoOnly: true, sub: [
+      { label: "Alertas y Recomendaciones", href: "/analytics/recomendaciones" },
+      { label: "Predicciones", href: "/analytics/predicciones" },
+    ],
+  },
   { label: "Datos externos", href: "/external-data", icon: "🛰️", agronomoOnly: true },
-  { label: "Administración", href: "#", icon: "🔧", adminOnly: true, sub: [
-    { label: "Usuarios", href: "/usuarios" },
-  ]},
+  {
+    label: "Administración", href: "#", icon: "🔧", adminOnly: true, sub: [
+      { label: "Usuarios", href: "/usuarios" },
+    ],
+  },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuthContext();
+  const { theme, toggle } = useTheme();
 
   function canSee(item: NavItem): boolean {
     if (item.adminOnly && user?.role !== "ADMIN") return false;
@@ -46,13 +54,25 @@ export function Sidebar() {
     return true;
   }
 
+  const linkBase: React.CSSProperties = {
+    display: "block",
+    padding: "0.5rem 0.75rem",
+    fontSize: "0.9rem",
+    borderRadius: "8px",
+    textDecoration: "none",
+    transition: "all var(--transition)",
+    marginBottom: "2px",
+  };
+
   return (
     <aside
       style={{
-        width: 240,
-        minWidth: 240,
-        background: "#1e293b",
-        color: "#e2e8f0",
+        width: "var(--sidebar-width)",
+        minWidth: "var(--sidebar-width)",
+        background: "var(--bg-glass)",
+        backdropFilter: "var(--blur-lg)",
+        WebkitBackdropFilter: "var(--blur-lg)",
+        borderRight: "1px solid var(--border)",
         display: "flex",
         flexDirection: "column",
         height: "100vh",
@@ -60,25 +80,27 @@ export function Sidebar() {
         top: 0,
       }}
     >
-      <div style={{ padding: "1.2rem", borderBottom: "1px solid #334155" }}>
-        <h1 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700 }}>
+      <div style={{ padding: "1.25rem 1.25rem 0.75rem", borderBottom: "1px solid var(--border)" }}>
+        <h1 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, letterSpacing: "-0.02em" }}>
           AgTech UNS
         </h1>
       </div>
 
-      <nav style={{ flex: 1, padding: "0.8rem", overflowY: "auto" }}>
+      <nav style={{ flex: 1, padding: "0.75rem", overflowY: "auto" }}>
         {NAV_ITEMS.filter(canSee).map((item) => {
-          const isActive = (item.sub ? item.sub.some((s) => pathname === s.href) : pathname.startsWith(item.href));
+          const isActive = item.sub
+            ? item.sub.some((s) => pathname === s.href)
+            : pathname.startsWith(item.href);
           return (
-            <div key={item.label} style={{ marginBottom: "0.3rem" }}>
+            <div key={item.label} style={{ marginBottom: "0.25rem" }}>
               {item.sub ? (
                 <>
                   <div
                     style={{
-                      padding: "0.5rem 0.7rem",
-                      fontSize: "0.85rem",
+                      padding: "0.5rem 0.75rem",
+                      fontSize: "0.75rem",
                       fontWeight: 600,
-                      color: "#94a3b8",
+                      color: "var(--text-muted)",
                       textTransform: "uppercase",
                       letterSpacing: "0.05em",
                     }}
@@ -92,15 +114,24 @@ export function Sidebar() {
                         key={sub.href}
                         href={sub.href}
                         style={{
-                          display: "block",
-                          padding: "0.45rem 0.7rem 0.45rem 1.8rem",
-                          fontSize: "0.9rem",
-                          color: subActive ? "#fff" : "#94a3b8",
-                          background: subActive ? "#334155" : "transparent",
-                          borderRadius: "6px",
-                          textDecoration: "none",
-                          transition: "background 0.15s, color 0.15s",
-                          marginBottom: "2px",
+                          ...linkBase,
+                          paddingLeft: "1.75rem",
+                          color: subActive ? "var(--accent)" : "var(--text-secondary)",
+                          background: subActive
+                            ? "var(--accent-bg)"
+                            : "transparent",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!subActive) {
+                            e.currentTarget.style.background = "var(--bg-glass-hover)";
+                            e.currentTarget.style.color = "var(--text-primary)";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!subActive) {
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.color = "var(--text-secondary)";
+                          }
                         }}
                       >
                         {sub.label}
@@ -112,14 +143,21 @@ export function Sidebar() {
                 <Link
                   href={item.href}
                   style={{
-                    display: "block",
-                    padding: "0.5rem 0.7rem",
-                    fontSize: "0.9rem",
-                    color: isActive ? "#fff" : "#94a3b8",
-                    background: isActive ? "#334155" : "transparent",
-                    borderRadius: "6px",
-                    textDecoration: "none",
-                    transition: "background 0.15s, color 0.15s",
+                    ...linkBase,
+                    color: isActive ? "var(--accent)" : "var(--text-secondary)",
+                    background: isActive ? "var(--accent-bg)" : "transparent",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "var(--bg-glass-hover)";
+                      e.currentTarget.style.color = "var(--text-primary)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = "var(--text-secondary)";
+                    }
                   }}
                 >
                   {item.icon} {item.label}
@@ -130,34 +168,64 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div
-        style={{
-          padding: "1rem",
-          borderTop: "1px solid #334155",
-          fontSize: "0.85rem",
-        }}
-      >
-        <div style={{ marginBottom: "0.4rem", color: "#94a3b8", wordBreak: "break-all" }}>
+      <div style={{ padding: "0.75rem", borderTop: "1px solid var(--border)" }}>
+        <div style={{ marginBottom: "0.4rem", color: "var(--text-secondary)", wordBreak: "break-all", fontSize: "0.85rem" }}>
           {user?.email}
         </div>
-        <div style={{ marginBottom: "0.6rem", color: "#64748b", fontSize: "0.8rem" }}>
+        <div style={{ marginBottom: "0.5rem", color: "var(--text-muted)", fontSize: "0.75rem" }}>
           Rol: {user?.role ? roleLabel(user.role) : "—"}
         </div>
-        <button
-          onClick={logout}
-          style={{
-            background: "transparent",
-            border: "1px solid #475569",
-            color: "#e2e8f0",
-            padding: "0.4rem 0.8rem",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "0.85rem",
-            width: "100%",
-          }}
-        >
-          Cerrar sesión
-        </button>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button
+            onClick={toggle}
+            title={`Cambiar a modo ${theme === "dark" ? "claro" : "oscuro"}`}
+            style={{
+              flex: 1,
+              background: "var(--bg-glass)",
+              border: "1px solid var(--border)",
+              color: "var(--text-secondary)",
+              padding: "0.4rem",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "0.85rem",
+              transition: "all var(--transition)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--bg-glass-hover)";
+              e.currentTarget.style.borderColor = "var(--border-hover)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "var(--bg-glass)";
+              e.currentTarget.style.borderColor = "var(--border)";
+            }}
+          >
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
+          <button
+            onClick={logout}
+            style={{
+              flex: 1,
+              background: "var(--bg-glass)",
+              border: "1px solid var(--border)",
+              color: "var(--text-secondary)",
+              padding: "0.4rem 0.8rem",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "0.85rem",
+              transition: "all var(--transition)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--bg-glass-hover)";
+              e.currentTarget.style.borderColor = "var(--border-hover)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "var(--bg-glass)";
+              e.currentTarget.style.borderColor = "var(--border)";
+            }}
+          >
+            Salir
+          </button>
+        </div>
       </div>
     </aside>
   );

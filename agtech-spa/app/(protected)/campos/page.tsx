@@ -37,7 +37,7 @@ export default function CamposListPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <div>
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>Campos</h1>
-          <p style={{ color: "#64748b", margin: "0.3rem 0 0", fontSize: "0.9rem" }}>
+          <p style={{ color: "var(--text-secondary)", margin: "0.3rem 0 0", fontSize: "0.9rem" }}>
             Unidades productivas registradas
           </p>
         </div>
@@ -60,7 +60,7 @@ export default function CamposListPage() {
             <Table
               columns={[
                 { header: "Nombre", accessor: (c: Campo) => (
-                  <Link href={`/campos/${encodeURIComponent(c.nombreCampo)}`} style={{ color: "#2c7be5", textDecoration: "none" }}>
+                  <Link href={`/campos/${encodeURIComponent(c.nombreCampo)}`} style={{ color: "var(--accent)", textDecoration: "none" }}>
                     {c.nombreCampo}
                   </Link>
                 )},
@@ -75,7 +75,7 @@ export default function CamposListPage() {
                           </Link>
                           <Button
                             variant="ghost"
-                            style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", color: "#e74c3c" }}
+                            style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", color: "var(--danger)" }}
                             onClick={async () => {
                               if (!window.confirm(`¿Eliminar "${c.nombreCampo}"?`)) return;
                               try {
@@ -100,7 +100,7 @@ export default function CamposListPage() {
                 <Button variant="ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                   Anterior
                 </Button>
-                <span style={{ padding: "0.5rem", color: "#64748b", fontSize: "0.9rem" }}>
+                <span style={{ padding: "0.5rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
                   {page} / {totalPages}
                 </span>
                 <Button variant="ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>

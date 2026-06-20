@@ -43,7 +43,7 @@ export default function RecomendacionesPage() {
   return (
     <div>
       <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>Alertas y Recomendaciones</h1>
-      <p style={{ color: "#64748b", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
+      <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
         Resultados combinados de alertas en tiempo real y recomendaciones batch
       </p>
 
@@ -52,7 +52,7 @@ export default function RecomendacionesPage() {
           <div>
             <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem" }}>Campo</label>
             <select value={campoSeleccionado} onChange={(e) => { setCampoSeleccionado(e.target.value); setParcelaSeleccionada(""); }}
-              style={{ padding: "0.4rem 0.75rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "0.9rem", background: "#fff" }}>
+              style={{ padding: "0.4rem 0.75rem", borderRadius: "var(--radius)", border: "1px solid var(--border)", fontSize: "0.9rem", background: "var(--bg-input)", color: "var(--text-primary)" }}>
               <option value="">Seleccionar campo</option>
               {campos.map((c) => <option key={c.nombreCampo} value={c.nombreCampo}>{c.nombreCampo}</option>)}
             </select>
@@ -61,7 +61,7 @@ export default function RecomendacionesPage() {
             <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem" }}>Parcela</label>
             <select value={parcelaSeleccionada} onChange={(e) => setParcelaSeleccionada(e.target.value)}
               disabled={!campoSeleccionado}
-              style={{ padding: "0.4rem 0.75rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "0.9rem", background: !campoSeleccionado ? "#f5f5f5" : "#fff" }}>
+              style={{ padding: "0.4rem 0.75rem", borderRadius: "var(--radius)", border: "1px solid var(--border)", fontSize: "0.9rem", background: !campoSeleccionado ? "var(--bg-glass)" : "var(--bg-input)", color: "var(--text-primary)" }}>
               <option value="">Seleccionar parcela</option>
               {parcelas.map((p) => <option key={p.nombreParcela} value={p.nombreParcela}>{p.nombreParcela}</option>)}
             </select>

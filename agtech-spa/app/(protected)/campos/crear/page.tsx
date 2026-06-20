@@ -80,7 +80,7 @@ export default function CrearCampoPage() {
       <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>
         Nuevo campo
       </h1>
-      <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>
+      <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
         Registrá una nueva unidad productiva
       </p>
 
@@ -106,14 +106,14 @@ export default function CrearCampoPage() {
             </span>
             <MapSelector onPolygonChange={setPolygon} existingPolygons={existingPolygons} />
             {polygon && (
-              <span style={{ fontSize: "0.8rem", color: "#27ae60", marginTop: "0.3rem", display: "block" }}>
+              <span style={{ fontSize: "0.8rem", color: "var(--success)", marginTop: "0.3rem", display: "block" }}>
                 ✅ Polígono definido
               </span>
             )}
           </div>
 
           {error && (
-            <div style={{ color: "#e74c3c", fontSize: "0.9rem", background: "#fdecea", padding: "0.6rem", borderRadius: "6px" }}>
+            <div style={{ color: "var(--danger)", fontSize: "0.9rem", background: "var(--danger-bg)", padding: "0.6rem", borderRadius: "var(--radius)" }}>
               {error}
             </div>
           )}

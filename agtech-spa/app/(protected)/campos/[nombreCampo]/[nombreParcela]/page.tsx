@@ -71,7 +71,7 @@ export default function ParcelaDetallePage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <div>
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>{nombreParcela}</h1>
-          <p style={{ color: "#64748b", margin: "0.3rem 0 0", fontSize: "0.9rem" }}>
+          <p style={{ color: "var(--text-secondary)", margin: "0.3rem 0 0", fontSize: "0.9rem" }}>
             {campo?.nombreCampo} — {parcela.nombreCultivo ? `${parcela.nombreCultivo} (${parcela.variedad})` : "Sin cultivo"}
           </p>
         </div>
@@ -83,7 +83,7 @@ export default function ParcelaDetallePage() {
               </Link>
               <Button
                 variant="ghost"
-                style={{ color: "#e74c3c" }}
+                style={{ color: "var(--danger)" }}
                 onClick={async () => {
                   if (!window.confirm(`¿Eliminar "${nombreParcela}"?`)) return;
                   try {
@@ -108,7 +108,7 @@ export default function ParcelaDetallePage() {
 
       <Card title={`Sensores (${activos.length} activos)`} style={{ marginBottom: "1.5rem" }}>
         {activos.length === 0 ? (
-          <p style={{ color: "#94a3b8", textAlign: "center", padding: "1rem" }}>
+          <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "1rem" }}>
             No hay sensores activos en esta parcela.
           </p>
         ) : (

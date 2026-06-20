@@ -97,7 +97,7 @@ export default function EditarParcelaPage() {
       <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>
         Editar parcela
       </h1>
-      <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>
+      <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
         {nombreCampo} — {nombreParcela}
       </p>
 
@@ -119,10 +119,10 @@ export default function EditarParcelaPage() {
               onChange={(e) => setSelectedCultivoKey(e.target.value)}
               style={{
                 padding: "0.5rem 0.75rem",
-                borderRadius: "6px",
-                border: "1px solid #ccc",
+                borderRadius: "var(--radius)",
+                border: "1px solid var(--border)",
                 fontSize: "1rem",
-                background: "#fff",
+                background: "var(--bg-input)",
               }}
             >
               <option value="">Sin cultivo asignado</option>
@@ -140,14 +140,14 @@ export default function EditarParcelaPage() {
             </span>
             <MapSelector onPolygonChange={setPolygon} existingPolygons={existingPolygons} />
             {polygon && (
-              <span style={{ fontSize: "0.8rem", color: "#27ae60", marginTop: "0.3rem", display: "block" }}>
+              <span style={{ fontSize: "0.8rem", color: "var(--success)", marginTop: "0.3rem", display: "block" }}>
                 ✅ Nuevo polígono definido
               </span>
             )}
           </div>
 
           {error && (
-            <div style={{ color: "#e74c3c", fontSize: "0.9rem", background: "#fdecea", padding: "0.6rem", borderRadius: "6px" }}>
+            <div style={{ color: "var(--danger)", fontSize: "0.9rem", background: "var(--danger-bg)", padding: "0.6rem", borderRadius: "var(--radius)" }}>
               {error}
             </div>
           )}

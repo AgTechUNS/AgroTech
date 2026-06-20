@@ -1,49 +1,50 @@
 "use client";
 
 import { useAuthContext } from "@/contexts/AuthContext";
+import { Card } from "@/components/ui";
 
 export default function DashboardPage() {
   const { user } = useAuthContext();
 
   return (
     <div>
-      <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>
-        Dashboard
-      </h1>
-      <p style={{ color: "#64748b", margin: "0 0 1.5rem", fontSize: "0.9rem" }}>
-        Bienvenido{user?.name ? `, ${user.name}` : ""} — resumen del sistema
-      </p>
+      <div style={{ marginBottom: "2rem" }}>
+        <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: "0 0 0.3rem", letterSpacing: "-0.02em" }}>
+          Dashboard
+        </h1>
+        <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "0.9rem" }}>
+          Bienvenido{user?.name ? `, ${user.name}` : ""} — resumen del sistema
+        </p>
+      </div>
 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
           gap: "1rem",
         }}
       >
-        <DashboardCard title="Campos" value="—" />
-        <DashboardCard title="Cultivos" value="—" />
-        <DashboardCard title="Alertas activas" value="—" />
-        <DashboardCard title="Sensores" value="—" />
+        <DashboardCard title="Campos" value="—" icon="🌾" />
+        <DashboardCard title="Cultivos" value="—" icon="🌱" />
+        <DashboardCard title="Alertas activas" value="—" icon="⚠️" />
+        <DashboardCard title="Sensores" value="—" icon="📡" />
       </div>
     </div>
   );
 }
 
-function DashboardCard({ title, value }: { title: string; value: string }) {
+function DashboardCard({ title, value, icon }: { title: string; value: string; icon: string }) {
   return (
-    <div
-      style={{
-        background: "#fff",
-        borderRadius: "8px",
-        border: "1px solid #e2e8f0",
-        padding: "1.2rem",
-      }}
-    >
-      <p style={{ margin: "0 0 0.5rem", color: "#64748b", fontSize: "0.85rem" }}>
-        {title}
-      </p>
-      <p style={{ margin: 0, fontSize: "1.8rem", fontWeight: 700 }}>{value}</p>
-    </div>
+    <Card hover>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <div>
+          <p style={{ margin: "0 0 0.5rem", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+            {title}
+          </p>
+          <p style={{ margin: 0, fontSize: "1.8rem", fontWeight: 700, lineHeight: 1 }}>{value}</p>
+        </div>
+        <span style={{ fontSize: "1.5rem", opacity: 0.6 }}>{icon}</span>
+      </div>
+    </Card>
   );
 }

@@ -45,23 +45,23 @@ export default function CrearUsuarioPage() {
   return (
     <div>
       <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>Nuevo usuario</h1>
-      <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>Crear un nuevo usuario en la plataforma</p>
+      <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>Crear un nuevo usuario en la plataforma</p>
 
       <Card>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.2rem", maxWidth: 400 }}>
           <div>
             <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem" }}>Email</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-              style={{ width: "100%", padding: "0.5rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.9rem" }} />
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: "0.9rem", background: "var(--bg-input)", color: "var(--text-primary)" }} />
           </div>
           <div>
             <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.3rem" }}>Rol</label>
             <select value={rol} onChange={(e) => setRol(e.target.value as UserRole)}
-              style={{ width: "100%", padding: "0.5rem", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "0.9rem", background: "#fff" }}>
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: "0.9rem", background: "var(--bg-input)", color: "var(--text-primary)" }}>
               {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
           </div>
-          {error && <p style={{ color: "#dc2626", fontSize: "0.85rem", margin: 0 }}>{error}</p>}
+          {error && <p style={{ color: "var(--danger)", fontSize: "0.85rem", margin: 0 }}>{error}</p>}
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <Button type="submit" loading={submitting}>Guardar usuario</Button>
             <Button variant="ghost" onClick={() => router.push("/usuarios")}>Cancelar</Button>

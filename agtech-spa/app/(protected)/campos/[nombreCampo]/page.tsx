@@ -66,7 +66,7 @@ export default function CampoDetallePage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <div>
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>{campo.nombreCampo}</h1>
-          <p style={{ color: "#64748b", margin: "0.3rem 0 0", fontSize: "0.9rem" }}>
+          <p style={{ color: "var(--text-secondary)", margin: "0.3rem 0 0", fontSize: "0.9rem" }}>
             {campo.descripcionCampo ?? "Sin descripción"}
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function CampoDetallePage() {
               </Link>
               <Button
                 variant="ghost"
-                style={{ color: "#e74c3c" }}
+                style={{ color: "var(--danger)" }}
                 onClick={async () => {
                   if (!window.confirm(`¿Eliminar "${campo.nombreCampo}" y sus parcelas?`)) return;
                   try {
@@ -108,7 +108,7 @@ export default function CampoDetallePage() {
         <Table
           columns={[
             { header: "Parcela", accessor: (p: Parcela) => (
-              <Link href={`/campos/${encodeURIComponent(nombreCampo)}/${encodeURIComponent(p.nombreParcela)}`} style={{ color: "#2c7be5", textDecoration: "none" }}>
+              <Link href={`/campos/${encodeURIComponent(nombreCampo)}/${encodeURIComponent(p.nombreParcela)}`} style={{ color: "var(--accent)", textDecoration: "none" }}>
                 {p.nombreParcela}
               </Link>
             )},
@@ -126,7 +126,7 @@ export default function CampoDetallePage() {
         <Table
           columns={[
             { header: "Device ID", accessor: (s: Sensor) => (
-              <Link href={`/campos/${encodeURIComponent(nombreCampo)}/${encodeURIComponent(s.nombreParcela)}`} style={{ color: "#2c7be5", textDecoration: "none", fontFamily: "monospace" }}>
+              <Link href={`/campos/${encodeURIComponent(nombreCampo)}/${encodeURIComponent(s.nombreParcela)}`} style={{ color: "var(--accent)", textDecoration: "none", fontFamily: "monospace" }}>
                 {s.deviceId}
               </Link>
             )},
@@ -136,8 +136,8 @@ export default function CampoDetallePage() {
               header: "Estado",
               accessor: (s: Sensor) =>
                 s.activo
-                  ? <span style={{ color: "#16a34a", fontWeight: 600 }}>Activo</span>
-                  : <span style={{ color: "#94a3b8" }}>Inactivo</span>,
+                  ? <span style={{ color: "var(--success)", fontWeight: 600 }}>Activo</span>
+                  : <span style={{ color: "var(--text-muted)" }}>Inactivo</span>,
             },
           ]}
           data={sensores}
@@ -208,7 +208,7 @@ function accionesColumnsParcelas(
         </Link>
         <Button
           variant="ghost"
-          style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", color: "#e74c3c" }}
+          style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", color: "var(--danger)" }}
           onClick={async () => {
             if (!window.confirm(`¿Eliminar "${p.nombreParcela}"?`)) return;
             try {
