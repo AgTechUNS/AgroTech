@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readSensoresPorParcela } from "@/lib/data/store";
+import { getUserFromRequest, getAdminEmail } from "@/lib/auth/token";
 import { Lectura } from "@/lib/types";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { nombreCampo: string; nombreParcela: string } }
 ) {
+  const user = getUserFromRequest(request);
+  if (!user) {
+    return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });
+  }
+  const adminEmail = getAdminEmail(user);
+
   const nombreCampo = decodeURIComponent(params.nombreCampo);
   const nombreParcela = decodeURIComponent(params.nombreParcela);
-  const sensores = readSensoresPorParcela(nombreCampo, nombreParcela);
+  const sensores = readSensoresPorParcela(adminEmail, nombreCampo, nombreParcela);
   const activos = sensores.filter((s) => s.activo);
 
   const now = Date.now();

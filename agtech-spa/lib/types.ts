@@ -20,6 +20,7 @@ export interface Campo {
   nombreCampo: string;
   descripcionCampo?: string;
   coordenadasCampo: string;
+  adminEmail: string;
 }
 
 export interface Parcela {
@@ -27,23 +28,45 @@ export interface Parcela {
   nombreCampo: string;
   descripcionParcela?: string;
   nombreCultivo: string | null;
+  variedad: string | null;
   coordenadasParcela: string;
+  adminEmail: string;
 }
 
 export interface Cultivo {
   nombreCultivo: string;
-  umbralHumedadMinima: number;
+  variedad: string;
+  adminEmail: string;
+}
+
+export interface CatalogoCultivo {
+  nombreCultivo: string;
+  variedad: string;
 }
 
 export interface Regla {
   metrica: string;
   operador: string;
   valor: number;
+  adminEmail: string;
+}
+
+export interface Agricultor {
+  email: string;
+  nombre: string;
+  password: string;
+  rol: "agricultor" | "ADMIN";
+  adminEmail?: string;
 }
 
 export interface Usuario {
   email: string;
   rol: "ADMIN" | "AGRONOMO" | "PRODUCTOR";
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
 }
 
 export interface WeatherResponse {
@@ -75,11 +98,13 @@ export interface Sensor {
   nombreParcela: string;
   tipo: "temperatura_humedad" | "ph" | "lluvia";
   activo: boolean;
+  adminEmail: string;
 }
 
 export interface Gateway {
   gatewayId: string;
   nombreCampo: string;
+  adminEmail: string;
 }
 
 export interface Lectura {
@@ -99,8 +124,9 @@ export interface LoginResponse {
 export interface JwtPayload {
   sub: string;
   email: string;
-  role: "ADMIN" | "AGRONOMO" | "PRODUCTOR";
+  role: "ADMIN" | "agricultor";
   name?: string;
+  adminEmail?: string;
   iat: number;
   exp: number;
 }

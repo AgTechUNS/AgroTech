@@ -1,0 +1,48 @@
+[
+  {
+    "nombreCultivo": "Trigo",
+    "umbralHumedadMinima": 30.5,
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "nombreCultivo": "Maíz",
+    "umbralHumedadMinima": 35,
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "nombreCultivo": "Soja",
+    "umbralHumedadMinima": 28,
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "nombreCultivo": "Girasol",
+    "umbralHumedadMinima": 25,
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "nombreCultivo": "Cebada",
+    "umbralHumedadMinima": 32,
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "nombreCultivo": "Avena",
+    "umbralHumedadMinima": 33,
+    "adminEmail": "admin2@ejemplo.com"
+  },
+  {
+    "nombreCultivo": "Sorgo",
+    "umbralHumedadMinima": 27,
+    "adminEmail": "admin2@ejemplo.com"
+  },
+  {
+    "nombreCultivo": "Avena",
+    "variedad": "INIA 910",
+    "umbralHumedadMinima": 32.5,
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "nombreCultivo": "Cebada",
+    "variedad": "Scarlett",
+    "adminEmail": "test@agtechuns.com"
+  }
+]

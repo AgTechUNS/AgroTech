@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { crearRegla } from "@/lib/services/reglas";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { puedeEditar } from "@/lib/auth/roles";
 import { Card, Button, Input } from "@/components/ui";
 
 const METRICAS = [
@@ -23,11 +25,16 @@ const OPERADORES = [
 
 export default function CrearReglaPage() {
   const router = useRouter();
+  const { user } = useAuthContext();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [metrica, setMetrica] = useState(METRICAS[0].value);
   const [operador, setOperador] = useState(OPERADORES[0].value);
   const [valorStr, setValorStr] = useState("");
+
+  useEffect(() => {
+    if (!puedeEditar(user)) router.push("/dashboard");
+  }, [user, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,6 +55,8 @@ export default function CrearReglaPage() {
       setSubmitting(false);
     }
   }
+
+  if (!puedeEditar(user)) return null;
 
   return (
     <div>

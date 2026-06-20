@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listarReglas } from "@/lib/services/reglas";
 import { Regla } from "@/lib/types";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { puedeEditar } from "@/lib/auth/roles";
 import { Card, Table, Button, Spinner } from "@/components/ui";
 
 const OPERADOR_LABELS: Record<string, string> = {
@@ -24,6 +26,7 @@ const METRICA_LABELS: Record<string, string> = {
 };
 
 export default function ReglasListPage() {
+  const { user } = useAuthContext();
   const [reglas, setReglas] = useState<Regla[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,9 +47,11 @@ export default function ReglasListPage() {
             Umbrales de evaluación para el pipeline de alertas tempranas
           </p>
         </div>
-        <Link href="/reglas/crear">
-          <Button>+ Nueva regla</Button>
-        </Link>
+        {puedeEditar(user) && (
+          <Link href="/reglas/crear">
+            <Button>+ Nueva regla</Button>
+          </Link>
+        )}
       </div>
 
       <Card title="Reglas configuradas">

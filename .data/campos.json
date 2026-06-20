@@ -1,0 +1,32 @@
+[
+  {
+    "nombreCampo": "Campo Los Pinos",
+    "descripcionCampo": "Establecimiento norte destinado a cultivos rotativos",
+    "coordenadasCampo": "{\"type\":\"Polygon\",\"coordinates\":[[[-62.5,-38],[-62.3,-38],[-62.3,-37.8],[-62.5,-37.8],[-62.5,-38]]]}",
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "nombreCampo": "Campo El Ombú",
+    "descripcionCampo": "Campo sur con riego por goteo",
+    "coordenadasCampo": "{\"type\":\"Polygon\",\"coordinates\":[[[-62.8,-38.5],[-62.6,-38.5],[-62.6,-38.3],[-62.8,-38.3],[-62.8,-38.5]]]}",
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "nombreCampo": "Campo La Esperanza",
+    "descripcionCampo": "Campo este con sistema de pivote central",
+    "coordenadasCampo": "{\"type\":\"Polygon\",\"coordinates\":[[[-62.1,-37.5],[-61.9,-37.5],[-61.9,-37.3],[-62.1,-37.3],[-62.1,-37.5]]]}",
+    "adminEmail": "admin2@ejemplo.com"
+  },
+  {
+    "nombreCampo": "Campo Santa Rosa",
+    "descripcionCampo": "Campo oeste destinado a pasturas",
+    "coordenadasCampo": "{\"type\":\"Polygon\",\"coordinates\":[[[-63,-38.2],[-62.8,-38.2],[-62.8,-38],[-63,-38],[-63,-38.2]]]}",
+    "adminEmail": "admin2@ejemplo.com"
+  },
+  {
+    "nombreCampo": "Campo Prueba 1",
+    "descripcionCampo": "villa ventrana",
+    "coordenadasCampo": "{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[[[-62.380371,-38.44764],[-62.380371,-38.219268],[-62.119446,-38.219268],[-62.119446,-38.44764],[-62.380371,-38.44764]]]}}",
+    "adminEmail": "test@agtechuns.com"
+  }
+]

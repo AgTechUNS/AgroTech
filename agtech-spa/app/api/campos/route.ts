@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readCampos, addCampo } from "@/lib/data/store";
+import { getUserFromRequest, getAdminEmail, requireAdmin } from "@/lib/auth/token";
 
 export async function GET(request: NextRequest) {
+  const user = getUserFromRequest(request);
+  if (!user) {
+    return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });
+  }
+  const adminEmail = getAdminEmail(user);
+
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get("page") ?? "1", 10);
   const limit = parseInt(searchParams.get("limit") ?? "20", 10);
 
-  const campos = readCampos();
+  const campos = readCampos(adminEmail);
   const total = campos.length;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const start = (page - 1) * limit;
@@ -19,6 +26,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const user = requireAdmin(request);
+  if (!user) {
+    return NextResponse.json({ error: { code: "FORBIDDEN", message: "Solo administradores" } }, { status: 403 });
+  }
+  const adminEmail = getAdminEmail(user);
+
   try {
     const body = await request.json();
     const { nombreCampo, descripcionCampo, coordenadasCampo } = body;
@@ -39,7 +52,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    addCampo({ nombreCampo, descripcionCampo, coordenadasCampo });
+    addCampo({ nombreCampo, descripcionCampo, coordenadasCampo, adminEmail });
 
     return NextResponse.json(
       { message: "Campo creado exitosamente" },

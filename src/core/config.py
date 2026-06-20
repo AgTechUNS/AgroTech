@@ -25,6 +25,15 @@ class Settings:
             "COPERNICUS/S2_SR_HARMONIZED",
         )
     )
+    database_dsn: str = field(
+        default_factory=lambda: os.getenv(
+            "DATABASE_DSN",
+            "postgresql+asyncpg://postgres:postgres@localhost:5432/agrotech",
+        )
+    )
+    database_echo: bool = field(
+        default_factory=lambda: os.getenv("DATABASE_ECHO", "false").lower() == "true"
+    )
 
 
 settings = Settings()

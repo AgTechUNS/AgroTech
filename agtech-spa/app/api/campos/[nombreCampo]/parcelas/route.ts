@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readParcelas, addParcela, readCampos } from "@/lib/data/store";
+import { getUserFromRequest, getAdminEmail, requireAdmin } from "@/lib/auth/token";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { nombreCampo: string } }
 ) {
+  const user = getUserFromRequest(request);
+  if (!user) {
+    return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });
+  }
+  const adminEmail = getAdminEmail(user);
   const nombreCampo = decodeURIComponent(params.nombreCampo);
-  const parcelas = readParcelas(nombreCampo);
+
+  const parcelas = readParcelas(adminEmail, nombreCampo);
 
   return NextResponse.json({
     data: parcelas,
@@ -18,10 +25,16 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { nombreCampo: string } }
 ) {
+  const user = requireAdmin(request);
+  if (!user) {
+    return NextResponse.json({ error: { code: "FORBIDDEN", message: "Solo administradores" } }, { status: 403 });
+  }
+  const adminEmail = getAdminEmail(user);
+
   try {
     const nombreCampo = decodeURIComponent(params.nombreCampo);
     const body = await request.json();
-    const { nombreParcela, descripcionParcela, coordenadasParcela, nombreCultivo } = body;
+    const { nombreParcela, descripcionParcela, coordenadasParcela, nombreCultivo, variedad } = body;
 
     if (!nombreParcela || !coordenadasParcela) {
       return NextResponse.json(
@@ -30,7 +43,7 @@ export async function POST(
       );
     }
 
-    const campos = readCampos();
+    const campos = readCampos(adminEmail);
     const campoExiste = campos.find((c) => c.nombreCampo === nombreCampo);
     if (!campoExiste) {
       return NextResponse.json(
@@ -39,7 +52,7 @@ export async function POST(
       );
     }
 
-    const parcelas = readParcelas(nombreCampo);
+    const parcelas = readParcelas(adminEmail, nombreCampo);
     const existe = parcelas.find((p) => p.nombreParcela === nombreParcela);
     if (existe) {
       return NextResponse.json(
@@ -54,6 +67,8 @@ export async function POST(
       descripcionParcela,
       coordenadasParcela,
       nombreCultivo: nombreCultivo ?? null,
+      variedad: variedad ?? null,
+      adminEmail,
     });
 
     return NextResponse.json(

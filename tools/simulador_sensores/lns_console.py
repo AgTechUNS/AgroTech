@@ -25,6 +25,7 @@ except ImportError:
 class Gateway:
     gateway_id: str
     campo_id: str
+    admin_email: str = ""
 
 
 @dataclass
@@ -32,6 +33,7 @@ class Sensor:
     device_id: str
     campo_id: str
     parcela_id: str
+    admin_email: str = ""
 
 
 @dataclass
@@ -70,6 +72,7 @@ PORT = int(os.getenv("PORT", "1883"))
 class LNSState:
     def __init__(self):
         self.campos: list[str] = []
+        self.campos_admin: dict[str, str] = {}
         self.gateways: list[Gateway] = []
         self.sensors: list[Sensor] = []
         self.campo_activo: str | None = None
@@ -107,6 +110,7 @@ class LNSState:
                     data = json.load(f)
                 if isinstance(data, list):
                     self.campos = [c["nombreCampo"] for c in data if "nombreCampo" in c]
+                    self.campos_admin = {c["nombreCampo"]: c.get("adminEmail", "") for c in data}
         except Exception:
             pass
 
@@ -127,12 +131,12 @@ class LNSState:
             if os.path.exists(REGISTRO_FILE):
                 with open(REGISTRO_FILE) as f:
                     data = json.load(f)
-                self.gateways = [Gateway(gw["gatewayId"], gw["nombreCampo"]) for gw in data.get("gateways", [])]
+                self.gateways = [Gateway(gw["gatewayId"], gw["nombreCampo"], gw.get("adminEmail", "")) for gw in data.get("gateways", [])]
                 raw_sensors = data.get("sensors", [])
                 self.sensors = []
                 for s in raw_sensors:
                     if s.get("activo", True):
-                        self.sensors.append(Sensor(s["deviceId"], s["nombreCampo"], s["nombreParcela"]))
+                        self.sensors.append(Sensor(s["deviceId"], s["nombreCampo"], s["nombreParcela"], s.get("adminEmail", "")))
             elif os.path.exists(REGISTRO_LEGACY):
                 with open(REGISTRO_LEGACY) as f:
                     data = json.load(f)
@@ -704,7 +708,8 @@ class App:
         if any(g.gateway_id == gw_id for g in self.state.gateways):
             self.show_msg(f"La gateway '{gw_id}' ya existe")
             return
-        self.state.gateways.append(Gateway(gateway_id=gw_id, campo_id=campo_id))
+        admin_email = self.state.campos_admin.get(campo_id, "")
+        self.state.gateways.append(Gateway(gateway_id=gw_id, campo_id=campo_id, admin_email=admin_email))
         self.state.save()
         self.show_msg(f"Gateway '{gw_id}' registrada en '{campo_id}'")
 
@@ -736,7 +741,8 @@ class App:
         if not parcela:
             self.show_msg("Parcela invalida")
             return
-        self.state.sensors.append(Sensor(device_id=dev_id, campo_id=campo_id, parcela_id=parcela))
+        admin_email = self.state.campos_admin.get(campo_id, "")
+        self.state.sensors.append(Sensor(device_id=dev_id, campo_id=campo_id, parcela_id=parcela, admin_email=admin_email))
         gws = self.state.gateways_del_campo(campo_id)
         if not gws:
             self.show_msg(f"⚠ Sensor '{dev_id}' registrado, pero '{campo_id}' no tiene gateways")

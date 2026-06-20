@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { listarCampos } from "@/lib/services/campos";
-import { listarParcelas } from "@/lib/services/parcelas";
+import { listarParcelas, eliminarParcela } from "@/lib/services/parcelas";
 import { listarSensores, listarLecturas } from "@/lib/services/sensores";
 import { Campo, Parcela, Sensor, Lectura } from "@/lib/types";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { puedeEditar } from "@/lib/auth/roles";
 import { Card, Button, Spinner } from "@/components/ui";
 import { SensorCard } from "@/components/sensors/SensorCard";
 import { SensorChart } from "@/components/sensors/SensorChart";
@@ -19,6 +22,7 @@ const FieldsMap = dynamic(
 export default function ParcelaDetallePage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuthContext();
   const nombreCampo = decodeURIComponent(params.nombreCampo as string);
   const nombreParcela = decodeURIComponent(params.nombreParcela as string);
   const [campo, setCampo] = useState<Campo | null>(null);
@@ -68,16 +72,38 @@ export default function ParcelaDetallePage() {
         <div>
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>{nombreParcela}</h1>
           <p style={{ color: "#64748b", margin: "0.3rem 0 0", fontSize: "0.9rem" }}>
-            {campo?.nombreCampo} — {parcela.nombreCultivo ?? "Sin cultivo"}
+            {campo?.nombreCampo} — {parcela.nombreCultivo ? `${parcela.nombreCultivo} (${parcela.variedad})` : "Sin cultivo"}
           </p>
         </div>
-        <Button onClick={() => router.push(`/campos/${encodeURIComponent(nombreCampo)}`)}>
-          Volver al campo
-        </Button>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          {puedeEditar(user) && (
+            <>
+              <Link href={`/campos/${encodeURIComponent(nombreCampo)}/${encodeURIComponent(nombreParcela)}/editar`}>
+                <Button variant="ghost">Editar</Button>
+              </Link>
+              <Button
+                variant="ghost"
+                style={{ color: "#e74c3c" }}
+                onClick={async () => {
+                  if (!window.confirm(`¿Eliminar "${nombreParcela}"?`)) return;
+                  try {
+                    await eliminarParcela(nombreCampo, nombreParcela);
+                    router.push(`/campos/${encodeURIComponent(nombreCampo)}`);
+                  } catch { }
+                }}
+              >
+                Eliminar
+              </Button>
+            </>
+          )}
+          <Button onClick={() => router.push(`/campos/${encodeURIComponent(nombreCampo)}`)}>
+            Volver al campo
+          </Button>
+        </div>
       </div>
 
       <Card style={{ padding: "0.5rem", marginBottom: "1.5rem" }}>
-        {campo && <FieldsMap fields={[campo]} parcels={[parcela]} height={300} />}
+        {campo && <FieldsMap fields={[campo]} parcels={[parcela]} sensores={sensores} height={300} />}
       </Card>
 
       <Card title={`Sensores (${activos.length} activos)`} style={{ marginBottom: "1.5rem" }}>

@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
-import { Campo, Cultivo, Parcela, Regla, Sensor, Gateway } from "@/lib/types";
-import { SEED_CAMPOS, SEED_CULTIVOS, SEED_PARCELAS, SEED_REGLAS, SEED_SENSORES } from "./seed";
+import { Campo, Cultivo, Parcela, Regla, Sensor, Gateway, Agricultor, CatalogoCultivo } from "@/lib/types";
+import { CATALOGO_CULTIVOS } from "./catalogo";
+import { SEED_CAMPOS, SEED_PARCELAS, SEED_REGLAS, SEED_SENSORES, SEED_AGRICULTORES } from "./seed";
 
 const DATA_DIR = path.resolve(process.cwd(), "..", ".data");
 const CAMPOS_PATH = path.join(DATA_DIR, "campos.json");
@@ -9,6 +10,7 @@ const CULTIVOS_PATH = path.join(DATA_DIR, "cultivos.json");
 const PARCELAS_PATH = path.join(DATA_DIR, "parcelas.json");
 const REGLAS_PATH = path.join(DATA_DIR, "reglas.json");
 const SENSORES_PATH = path.join(DATA_DIR, "sensores.json");
+const USUARIOS_PATH = path.join(DATA_DIR, "usuarios.json");
 
 function ensureDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -33,10 +35,20 @@ function writeFile<T>(filePath: string, data: T[]): void {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
 }
 
+/** Devuelve el email del admin contextual para un usuario dado */
+export function getAdminEmail(email: string): string {
+  const user = findAgricultor(email);
+  if (!user) return email;
+  if (user.rol === "ADMIN") return user.email;
+  return user.adminEmail ?? email;
+}
+
 // --- Campos ---
 
-export function readCampos(): Campo[] {
-  return readFile(CAMPOS_PATH, SEED_CAMPOS);
+export function readCampos(adminEmail?: string): Campo[] {
+  const all = readFile(CAMPOS_PATH, SEED_CAMPOS);
+  if (adminEmail) return all.filter((c) => c.adminEmail === adminEmail);
+  return all;
 }
 
 export function addCampo(campo: Campo): void {
@@ -45,10 +57,25 @@ export function addCampo(campo: Campo): void {
   writeFile(CAMPOS_PATH, campos);
 }
 
+export function updateCampo(nombreCampo: string, data: Partial<Campo>): void {
+  const campos = readCampos();
+  const idx = campos.findIndex((c) => c.nombreCampo === nombreCampo);
+  if (idx === -1) return;
+  campos[idx] = { ...campos[idx], ...data };
+  writeFile(CAMPOS_PATH, campos);
+}
+
+export function deleteCampo(nombreCampo: string): void {
+  const campos = readCampos();
+  writeFile(CAMPOS_PATH, campos.filter((c) => c.nombreCampo !== nombreCampo));
+}
+
 // --- Cultivos ---
 
-export function readCultivos(): Cultivo[] {
-  return readFile(CULTIVOS_PATH, SEED_CULTIVOS);
+export function readCultivos(adminEmail?: string): Cultivo[] {
+  const all = readFile<Cultivo>(CULTIVOS_PATH, []);
+  if (adminEmail) return all.filter((c) => c.adminEmail === adminEmail);
+  return all;
 }
 
 export function addCultivo(cultivo: Cultivo): void {
@@ -57,12 +84,16 @@ export function addCultivo(cultivo: Cultivo): void {
   writeFile(CULTIVOS_PATH, cultivos);
 }
 
+export function readCatalogo(): CatalogoCultivo[] {
+  return CATALOGO_CULTIVOS;
+}
+
 // --- Parcelas ---
 
-export function readParcelas(nombreCampo: string): Parcela[] {
-  return readFile(PARCELAS_PATH, SEED_PARCELAS).filter(
-    (p) => p.nombreCampo === nombreCampo
-  );
+export function readParcelas(adminEmail: string, nombreCampo?: string): Parcela[] {
+  let all = readFile(PARCELAS_PATH, SEED_PARCELAS).filter((p) => p.adminEmail === adminEmail);
+  if (nombreCampo) all = all.filter((p) => p.nombreCampo === nombreCampo);
+  return all;
 }
 
 export function addParcela(parcela: Parcela): void {
@@ -71,10 +102,30 @@ export function addParcela(parcela: Parcela): void {
   writeFile(PARCELAS_PATH, parcelas);
 }
 
+export function updateParcela(nombreCampo: string, nombreParcela: string, data: Partial<Parcela>): void {
+  const parcelas = readFile(PARCELAS_PATH, SEED_PARCELAS);
+  const idx = parcelas.findIndex((p) => p.nombreCampo === nombreCampo && p.nombreParcela === nombreParcela);
+  if (idx === -1) return;
+  parcelas[idx] = { ...parcelas[idx], ...data };
+  writeFile(PARCELAS_PATH, parcelas);
+}
+
+export function deleteParcela(nombreCampo: string, nombreParcela: string): void {
+  const parcelas = readFile(PARCELAS_PATH, SEED_PARCELAS);
+  writeFile(PARCELAS_PATH, parcelas.filter((p) => p.nombreCampo !== nombreCampo || p.nombreParcela !== nombreParcela));
+}
+
+export function deleteParcelasByCampo(nombreCampo: string): void {
+  const parcelas = readFile(PARCELAS_PATH, SEED_PARCELAS);
+  writeFile(PARCELAS_PATH, parcelas.filter((p) => p.nombreCampo !== nombreCampo));
+}
+
 // --- Reglas ---
 
-export function readReglas(): Regla[] {
-  return readFile(REGLAS_PATH, SEED_REGLAS);
+export function readReglas(adminEmail?: string): Regla[] {
+  const all = readFile(REGLAS_PATH, SEED_REGLAS);
+  if (adminEmail) return all.filter((r) => r.adminEmail === adminEmail);
+  return all;
 }
 
 export function addRegla(regla: Regla): void {
@@ -101,10 +152,21 @@ function initSensorStore(): void {
   }
 }
 
-export function readSensores(): SensorStore {
+function readSensoresStore(): SensorStore {
   initSensorStore();
   const raw = fs.readFileSync(SENSORES_PATH, "utf-8");
   return JSON.parse(raw) as SensorStore;
+}
+
+export function readSensores(adminEmail?: string): SensorStore {
+  const store = readSensoresStore();
+  if (adminEmail) {
+    return {
+      gateways: store.gateways.filter((g) => !g.adminEmail || g.adminEmail === adminEmail),
+      sensors: store.sensors.filter((s) => !s.adminEmail || s.adminEmail === adminEmail),
+    };
+  }
+  return store;
 }
 
 export function writeSensores(store: SensorStore): void {
@@ -112,12 +174,47 @@ export function writeSensores(store: SensorStore): void {
   fs.writeFileSync(SENSORES_PATH, JSON.stringify(store, null, 2), "utf-8");
 }
 
-export function readSensoresPorCampo(nombreCampo: string): Sensor[] {
-  return readSensores().sensors.filter((s) => s.nombreCampo === nombreCampo);
+export function readSensoresPorCampo(adminEmail: string, nombreCampo: string): Sensor[] {
+  return readSensores(adminEmail).sensors.filter((s) => s.nombreCampo === nombreCampo);
 }
 
-export function readSensoresPorParcela(nombreCampo: string, nombreParcela: string): Sensor[] {
-  return readSensores().sensors.filter(
+export function readSensoresPorParcela(adminEmail: string, nombreCampo: string, nombreParcela: string): Sensor[] {
+  return readSensores(adminEmail).sensors.filter(
     (s) => s.nombreCampo === nombreCampo && s.nombreParcela === nombreParcela
   );
+}
+
+// --- Agricultores ---
+
+export function readAgricultores(adminEmail?: string): Agricultor[] {
+  const all = readFile(USUARIOS_PATH, SEED_AGRICULTORES);
+  if (adminEmail) {
+    return all.filter(
+      (a) => a.email === adminEmail || (a.rol !== "ADMIN" && a.adminEmail === adminEmail)
+    );
+  }
+  return all;
+}
+
+export function addAgricultor(agricultor: Agricultor): void {
+  const list = readAgricultores();
+  list.push(agricultor);
+  writeFile(USUARIOS_PATH, list);
+}
+
+export function updateAgricultor(email: string, data: Partial<Agricultor>): void {
+  const list = readAgricultores();
+  const idx = list.findIndex((a) => a.email === email);
+  if (idx === -1) return;
+  list[idx] = { ...list[idx], ...data };
+  writeFile(USUARIOS_PATH, list);
+}
+
+export function deleteAgricultor(email: string): void {
+  const list = readAgricultores();
+  writeFile(USUARIOS_PATH, list.filter((a) => a.email !== email));
+}
+
+export function findAgricultor(email: string): Agricultor | undefined {
+  return readAgricultores().find((a) => a.email === email);
 }
