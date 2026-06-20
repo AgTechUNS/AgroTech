@@ -109,31 +109,31 @@ class IotIngestionService:
         try:
             with open(self.dlq_path, "a") as f:
                 f.write(json.dumps(entry) + "\n")
-            print(f"📝 Escrito a DLQ: {lectura.sensor_id}")
+            print(f"[DLQ]  Escrito a DLQ: {lectura.sensor_id}")
         except Exception as e:
-            print(f"❌ Error escribiendo DLQ: {e}")
+            print(f"[DLQ] Error escribiendo DLQ: {e}")
 
     def start(self):
-        print(f"📡 [IotIngestionService] Conectando a broker MQTT...")
+        print(f"[IotIngestionService] Conectando a broker MQTT...")
         self.client.connect(self.broker, self.port, 60)
-        print("🚀 IoT Ingestion Component iniciado y escuchando...")
+        print("[IotIngestionService] Componente iniciado y escuchando...")
         self.client.loop_forever()
 
     def _on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            print(f"✅ [MQTT] Conectado al broker")
+            print(f"[OK]  [MQTT] Conectado al broker")
             client.subscribe("v3/agtechuns-app/devices/+/up", qos=1)
-            print(f"📢 [MQTT] Suscrito a: v3/agtechuns-app/devices/+/up")
+            print(f"[Topic]  [MQTT] Suscrito a: v3/agtechuns-app/devices/+/up")
         else:
-            print(f"❌ [MQTT] Error de conexión: código {rc}")
+            print(f"[Error]  [MQTT] Error de conexión: código {rc}")
     
     def _on_disconnect(self, client, userdata, rc):
         if rc != 0:
-            print(f"⚠️ [MQTT] Desconexión inesperada: código {rc}")
+            print(f"[Warn]  [MQTT] Desconexión inesperada: código {rc}")
 
     def _on_message(self, client, userdata, msg):
         try:
-            print(f"📨 [MQTT] Mensaje recibido en: {msg.topic}")
+            print(f"[Msg]  [MQTT] Mensaje recibido en: {msg.topic}")
             lora_packet = json.loads(msg.payload.decode())
             device_id = lora_packet['end_device_ids']['device_id']
             timestamp_str = lora_packet['received_at']
@@ -141,7 +141,7 @@ class IotIngestionService:
             # --- DEDUPLICACIÓN ---
             dedup_key = f"{device_id}_{timestamp_str}"
             if dedup_key in self.dedup_cache:
-                print(f"⏭️ [Dedup] Duplicado descartado: {dedup_key}")
+                print(f"[Skip]  [Dedup] Duplicado descartado: {dedup_key}")
                 return
             self.dedup_cache.add(dedup_key)
 
@@ -153,10 +153,10 @@ class IotIngestionService:
             hum = float(telemetria['h'])
             campo_id = lora_packet.get('campo_id')
             parcela_id = lora_packet.get('parcela_id')
-            print(f"📊 [MQTT] Datos parseados - Sensor: {device_id}, Campo: {campo_id}, Parcela: {parcela_id}, T: {temp}°C, H: {hum}%")
+            print(f"[Data]  [MQTT] Datos parseados - Sensor: {device_id}, Campo: {campo_id}, Parcela: {parcela_id}, T: {temp}°C, H: {hum}%")
 
             if temp < -20 or temp > 60:
-                print(f"⚠️ Descartado: Temperatura ilógica ({temp}°C) en {device_id}")
+                print(f"[Warn]  Descartado: Temperatura ilógica ({temp}°C) en {device_id}")
                 return
 
             lectura_limpia = LecturaNormalizada(
@@ -173,9 +173,9 @@ class IotIngestionService:
                 self.write_queue.put(lectura_limpia),
                 self.loop
             )
-            print(f"⏳ Lectura encolada para persistir: {device_id}")
+            print(f"[Encolado] Lectura encolada para persistir: {device_id}")
 
         except Exception as e:
-            print(f"❌ Error interno procesando paquete: {e}")
+            print(f"[Error]  Error interno procesando paquete: {e}")
             import traceback
             traceback.print_exc()

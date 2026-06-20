@@ -1,9 +1,10 @@
+import json
 import uuid
 from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from pydantic.alias_generators import to_camel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -67,7 +68,7 @@ class CampoOut(S):
     coordenadas_campo: str
     descripcion_campo: Optional[str] = None
     admin_email: Optional[str] = None
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
 # ── Parcela ─────────────────────────────────────────
 
@@ -93,7 +94,7 @@ class ParcelaOut(S):
     nombre_cultivo: Optional[str] = None
     variedad: Optional[str] = None
     admin_email: Optional[str] = None
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
 # ── Regla ───────────────────────────────────────────
 
@@ -122,7 +123,14 @@ class ReglaOut(S):
     valor: float
     campos_asignados: list[str]
     admin_email: Optional[str] = None
-    created_at: datetime
+    created_at: Optional[datetime] = None
+
+    @field_validator("campos_asignados", mode="before")
+    @classmethod
+    def parse_campos(cls, v: object) -> object:
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
 
 # ── Sensor ──────────────────────────────────────────
 
@@ -146,7 +154,7 @@ class SensorOut(S):
     tipo: str
     activo: bool
     admin_email: Optional[str] = None
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
 # ── Cultivo ─────────────────────────────────────────
 
@@ -158,7 +166,7 @@ class CultivoOut(S):
     nombre_cultivo: str
     variedad: str
     admin_email: Optional[str] = None
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
 # ── Router setup ────────────────────────────────────
 
@@ -414,12 +422,7 @@ async def list_reglas(
     async with db.begin():
         from sqlalchemy import select
         result = await db.execute(select(Regla).order_by(Regla.nombre))
-        reglas = list(result.scalars().all())
-    import json
-    for r in reglas:
-        if isinstance(r.campos_asignados, str):
-            r.campos_asignados = json.loads(r.campos_asignados)
-    return reglas
+        return list(result.scalars().all())
 
 
 @router.post("/reglas", response_model=ReglaOut, status_code=201)
@@ -428,7 +431,6 @@ async def create_regla(
     user: UserContext = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    import json
     async with db.begin():
         r = Regla(
             id=uuid.uuid4(),
@@ -442,7 +444,6 @@ async def create_regla(
         )
         db.add(r)
         await db.flush()
-        r.campos_asignados = body.campos_asignados
         return r
 
 
@@ -456,9 +457,6 @@ async def get_regla(
     if r is None:
         from fastapi import HTTPException
         raise HTTPException(404, "Regla no encontrada")
-    import json
-    if isinstance(r.campos_asignados, str):
-        r.campos_asignados = json.loads(r.campos_asignados)
     return r
 
 
@@ -468,7 +466,6 @@ async def update_regla(
     user: UserContext = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    import json
     async with db.begin():
         r = await db.get(Regla, regla_id)
         if r is None:
@@ -480,8 +477,6 @@ async def update_regla(
         for k, v in data.items():
             setattr(r, k, v)
         await db.flush()
-        if isinstance(r.campos_asignados, str):
-            r.campos_asignados = json.loads(r.campos_asignados)
         return r
 
 

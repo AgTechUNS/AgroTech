@@ -5,6 +5,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+*.pyc
 
 # Virtual environment
 .venv/
@@ -18,15 +19,16 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+nul
 
 # MQTT
 dlq_fallos.json
 
-#Carpetas
-
+# Directorios no trackeables
 /ArchivosLocales/
 /.opencode/
-/.Opencode/
+.pytest_cache/
+.data/
 
 # Credenciales y secrets (nunca committear)
 service_account.json
@@ -36,10 +38,9 @@ secrets/
 .env
 .env.local
 
-
-# Python
-__pycache__/
-*.pyc
+# Logs y artifacts runtime
+*.log
+out.txt
 
 # SPA
 agtech-spa/node_modules/

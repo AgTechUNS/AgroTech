@@ -9,6 +9,8 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 from fastapi import FastAPI
 
 from core.config import settings
+from modules.security.core.exceptions import register_exception_handlers
+from modules.security.core.limiter import limiter
 from infrastructure.relational_repo.database import Database
 from infrastructure.relational_repo.repository import RelationalRepository
 from infrastructure.time_series_repo.influx_client import TimeSeriesRepository
@@ -18,9 +20,6 @@ from modules.auth.router import router as auth_router
 from modules.auth.dependencies import init_db
 from modules.data_api.router import router as data_api_router
 from modules.external_data_gateway.router import router as external_data_router
-from modules.security.core.exceptions import register_exception_handlers
-from modules.security.core.limiter import limiter
-
 logger = logging.getLogger(__name__)
 
 _tarea_batch: asyncio.Task | None = None
@@ -80,6 +79,7 @@ app = FastAPI(
     version="1.1.0",
     lifespan=lifespan,
 )
+
 
 register_exception_handlers(app)
 

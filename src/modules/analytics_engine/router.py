@@ -119,7 +119,7 @@ async def consultar_recomendaciones(
                 nombre_regla_humedad, nombreCampo
             )
             if regla_humedad is not None:
-                umbral_humedad = regla_humedad.umbral
+                umbral_humedad = regla_humedad.valor
                 logger.info(
                     "Umbral humedad desde regla '%s': %.1f", nombre_regla_humedad, umbral_humedad
                 )
@@ -128,7 +128,7 @@ async def consultar_recomendaciones(
                 nombre_regla_temperatura, nombreCampo
             )
             if regla_temperatura is not None:
-                umbral_temperatura = regla_temperatura.umbral
+                umbral_temperatura = regla_temperatura.valor
                 logger.info(
                     "Umbral temperatura desde regla '%s': %.1f", nombre_regla_temperatura, umbral_temperatura
                 )
@@ -285,9 +285,5 @@ async def consultar_predicciones(
 
 
 # ──────────────────────────────────────────────
-# CRUD de reglas (Fase 4)
+# CRUD de reglas migrado a /api/reglas via data_api.router
 # ──────────────────────────────────────────────
-
-
-# NOTE: CRUD de reglas migrado a /api/reglas via data_api.router
-# Los endpoints heredados se mantienen como wrappers para compatibilidad.

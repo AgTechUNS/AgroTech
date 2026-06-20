@@ -56,6 +56,7 @@ class TimeSeriesRepository:
             print(f"Dato guardado para campo {lectura.campo_id} | parcela {lectura.parcela_id} | Sensor: {lectura.sensor_id}")
         except Exception as e:
             print(f"Error al guardar en InfluxDB: {e}")
+            raise
 
     # ──────────────────────────────────────────────
     # Consultas públicas

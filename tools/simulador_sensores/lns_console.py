@@ -53,9 +53,6 @@ class ReceptionLog:
 # Estado del simulador
 # ---------------------------------------------------------------------------
 
-<<<<<<< HEAD
-REGISTRO_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "registro_lns.json")
-=======
 TOOLS_DIR = pathlib.Path(__file__).parent.resolve()
 SPA_DATA_DIR = TOOLS_DIR.parents[1] / ".data"
 
@@ -63,8 +60,6 @@ REGISTRO_FILE = SPA_DATA_DIR / "sensores.json"
 CAMPOS_FILE = SPA_DATA_DIR / "campos.json"
 PARCELAS_FILE = SPA_DATA_DIR / "parcelas.json"
 REGISTRO_LEGACY = TOOLS_DIR / "registro_lns.json"
-
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
 BROKER = os.getenv("BROKER", "localhost")
 PORT = int(os.getenv("PORT", "1883"))
 
@@ -84,25 +79,6 @@ class LNSState:
         self.packet_count = 0
         self.last_packet_info = ""
 
-<<<<<<< HEAD
-    def load(self):
-        if not os.path.exists(REGISTRO_FILE):
-            return
-        try:
-            with open(REGISTRO_FILE) as f:
-                data = json.load(f)
-            self.campos = data.get("campos", [])
-            self.gateways = [Gateway(**g) for g in data.get("gateways", [])]
-            self.sensors = [Sensor(**s) for s in data.get("sensors", [])]
-        except Exception:
-            pass
-
-    def save(self):
-        data = {
-            "campos": self.campos,
-            "gateways": [asdict(g) for g in self.gateways],
-            "sensors": [asdict(s) for s in self.sensors],
-=======
     def _load_spa_campos(self):
         try:
             if os.path.exists(CAMPOS_FILE):
@@ -151,21 +127,16 @@ class LNSState:
         data = {
             "gateways": [{"gatewayId": g.gateway_id, "nombreCampo": g.campo_id} for g in self.gateways],
             "sensors": [{"deviceId": s.device_id, "nombreCampo": s.campo_id, "nombreParcela": s.parcela_id, "tipo": "temperatura_humedad", "activo": True} for s in self.sensors],
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
         }
         with open(REGISTRO_FILE, "w") as f:
             json.dump(data, f, indent=2)
 
-<<<<<<< HEAD
-=======
     def load(self):
         self._load_spa_campos()
         self._read_sensor_file()
 
     def save(self):
         self._write_sensor_file()
-
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
     def sensores_sin_cobertura(self) -> list[Sensor]:
         campos_con_gw = {g.campo_id for g in self.gateways}
         return [s for s in self.sensors if s.campo_id not in campos_con_gw]
@@ -359,11 +330,8 @@ class App:
             content_end = self._draw_historial(content_top, h, w)
         elif self.view == "list_selection":
             content_end = self._draw_list_selection(content_top, h, w)
-<<<<<<< HEAD
-=======
         elif self.view == "parcela_select":
             content_end = self._draw_parcela_select(content_top, h, w)
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
 
         self._draw_log_panel(content_end + 1, h - 1, h, w)
 
@@ -401,19 +369,12 @@ class App:
 
     def _draw_campo_select(self, y, h, w):
         if not self.state.campos:
-<<<<<<< HEAD
-            self.write(y, 4, "No hay campos registrados.", 3)
-            self.write(y + 1, 4, "Cree un campo o registre una gateway.")
-            y += 2
-        else:
-=======
             self.write(y, 4, "No hay campos en la aplicacion web.", 3)
             self.write(y + 1, 4, "Crealos desde la SPA (app web) primero.")
             y += 2
         else:
             self.write(y, 4, "Campos sincronizados de la aplicacion web:", 6)
             y += 1
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
             for i, campo in enumerate(self.state.campos):
                 gw = len(self.state.gateways_del_campo(campo))
                 sn = len(self.state.sensors_del_campo(campo))
@@ -422,11 +383,7 @@ class App:
 
             y += len(self.state.campos)
 
-<<<<<<< HEAD
-        self.write(y, 4, "[N]  Crear nuevo campo")
-=======
         self.write(y, 4, "[N]  Crear nuevo campo (solo local)")
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
         self.write(y + 1, 4, "[0]  Volver")
         return y + 2
 
@@ -557,8 +514,6 @@ class App:
         self.write(y, 4, prompt)
         return y + 1
 
-<<<<<<< HEAD
-=======
     def _draw_parcela_select(self, y, h, w):
         campo_id = self.view_data.get("campo_id", "")
         parcelas = self.view_data.get("parcelas", [])
@@ -575,8 +530,6 @@ class App:
             y += len(parcelas)
         self.write(y, 4, "[0]  Cancelar")
         return y + 1
-
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
     # ---------------------------------------------------------------
     # Manejo de entrada
     # ---------------------------------------------------------------
@@ -609,11 +562,8 @@ class App:
             self._handle_list_key(key)
         elif self.view == "list_selection":
             self._handle_list_selection_key(key)
-<<<<<<< HEAD
-=======
         elif self.view == "parcela_select":
             self._handle_parcela_select_key(key)
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
 
     def _handle_input_key(self, key):
         if key == 10 or key == curses.KEY_ENTER:
@@ -721,9 +671,6 @@ class App:
         if any(s.device_id == dev_id for s in self.state.sensors):
             self.show_msg(f"El sensor '{dev_id}' ya existe")
             return
-<<<<<<< HEAD
-        self.start_input("ID de la parcela:", lambda p: self._register_sensor_final(campo_id, dev_id, p))
-=======
         parcelas = self.state._load_spa_parcelas(campo_id)
         if not parcelas:
             self.start_input("ID de la parcela (no hay parcelas en SPA):", lambda p: self._register_sensor_final(campo_id, dev_id, p))
@@ -734,7 +681,6 @@ class App:
                 "parcelas": parcelas,
                 "dev_id": dev_id,
             }
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
 
     def _register_sensor_final(self, campo_id, dev_id, parcela):
         parcela = parcela.strip()
@@ -816,8 +762,6 @@ class App:
                 self.view = "campo_menu"
                 self.view_data = {"campo_id": campo_id}
 
-<<<<<<< HEAD
-=======
     def _handle_parcela_select_key(self, key):
         ch = chr(key) if 48 <= key <= 57 else ""
         campo_id = self.view_data.get("campo_id", "")
@@ -831,8 +775,6 @@ class App:
             idx = int(ch) - 1
             if 0 <= idx < len(parcelas):
                 self._register_sensor_final(campo_id, dev_id, parcelas[idx])
-
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
     def _toggle_transmision(self):
         if self.state.transmitiendo:
             self.state.transmitiendo = False
