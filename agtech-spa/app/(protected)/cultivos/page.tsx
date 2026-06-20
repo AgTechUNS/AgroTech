@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listarCultivos } from "@/lib/services/cultivos";
 import { Cultivo } from "@/lib/types";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { puedeEditar } from "@/lib/auth/roles";
 import { Card, Table, Button, Spinner } from "@/components/ui";
 
 export default function CultivosListPage() {
+  const { user } = useAuthContext();
   const [cultivos, setCultivos] = useState<Cultivo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,9 +30,11 @@ export default function CultivosListPage() {
             Catálogo de cultivos y constantes agronómicas
           </p>
         </div>
-        <Link href="/cultivos/crear">
-          <Button>+ Nuevo cultivo</Button>
-        </Link>
+        {puedeEditar(user) && (
+          <Link href="/cultivos/crear">
+            <Button>+ Nuevo cultivo</Button>
+          </Link>
+        )}
       </div>
 
       <Card title="Catálogo">
@@ -39,10 +44,10 @@ export default function CultivosListPage() {
           <Table
             columns={[
               { header: "Cultivo", accessor: (c: Cultivo) => c.nombreCultivo },
-              { header: "Umbral humedad mínima", accessor: (c: Cultivo) => `${c.umbralHumedadMinima}%` },
+              { header: "Variedad", accessor: (c: Cultivo) => c.variedad },
             ]}
             data={cultivos}
-            keyExtractor={(c) => c.nombreCultivo}
+            keyExtractor={(c) => `${c.nombreCultivo}|${c.variedad}`}
             emptyMessage="No hay cultivos registrados."
           />
         )}

@@ -1,7 +1,8 @@
 import { Regla, PaginatedResponse } from "@/lib/types";
+import { fetchWithAuth } from "@/lib/auth";
 
 export async function listarReglas(page = 1, limit = 50): Promise<PaginatedResponse<Regla>> {
-  const res = await fetch(`/api/reglas?page=${page}&limit=${limit}`);
+  const res = await fetchWithAuth(`/api/reglas?page=${page}&limit=${limit}`);
   if (!res.ok) throw new Error("Error al obtener reglas");
   return res.json();
 }
@@ -13,9 +14,8 @@ export interface CrearReglaPayload {
 }
 
 export async function crearRegla(payload: CrearReglaPayload): Promise<void> {
-  const res = await fetch("/api/reglas", {
+  const res = await fetchWithAuth("/api/reglas", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {

@@ -4,14 +4,29 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthContext } from "@/contexts/AuthContext";
 
-const NAV_ITEMS = [
+interface NavSubItem {
+  label: string;
+  href: string;
+}
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon: string;
+  adminOnly?: boolean;
+  sub?: NavSubItem[];
+}
+
+const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: "📊" },
   { label: "Campos", href: "/campos", icon: "🌾" },
   { label: "Catálogos", href: "#", icon: "⚙️", sub: [
     { label: "Cultivos", href: "/cultivos" },
     { label: "Reglas", href: "/reglas" },
-    { label: "Usuarios", href: "/usuarios" },
     { label: "Sensores", href: "/sensores" },
+  ]},
+  { label: "Administración", href: "#", icon: "🔧", adminOnly: true, sub: [
+    { label: "Agricultores", href: "/agricultores" },
   ]},
   { label: "Analítica", href: "#", icon: "📈", sub: [
     { label: "Alertas", href: "/alertas" },
@@ -44,7 +59,9 @@ export function Sidebar() {
       </div>
 
       <nav style={{ flex: 1, padding: "0.8rem", overflowY: "auto" }}>
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS
+          .filter((item) => !item.adminOnly || user?.role === "ADMIN")
+          .map((item) => {
           const isActive = (item.sub ? item.sub.some((s) => pathname === s.href) : pathname.startsWith(item.href));
           return (
             <div key={item.label} style={{ marginBottom: "0.3rem" }}>

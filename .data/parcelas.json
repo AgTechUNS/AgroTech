@@ -1,0 +1,35 @@
+[
+  {
+    "nombreParcela": "Lote A",
+    "nombreCampo": "Campo Los Pinos",
+    "descripcionParcela": "Parcela norte destinada a trigo",
+    "nombreCultivo": "Trigo",
+    "coordenadasParcela": "{\"type\":\"Polygon\",\"coordinates\":[[[-62.45,-37.9],[-62.35,-37.9],[-62.35,-37.85],[-62.45,-37.85],[-62.45,-37.9]]]}",
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "nombreParcela": "Lote B",
+    "nombreCampo": "Campo Los Pinos",
+    "descripcionParcela": "Parcela sur con riego",
+    "nombreCultivo": "Maíz",
+    "coordenadasParcela": "{\"type\":\"Polygon\",\"coordinates\":[[[-62.45,-37.95],[-62.35,-37.95],[-62.35,-37.9],[-62.45,-37.9],[-62.45,-37.95]]]}",
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "nombreParcela": "Lote A",
+    "nombreCampo": "Campo La Esperanza",
+    "descripcionParcela": "Parcela principal con pivote",
+    "nombreCultivo": "Avena",
+    "coordenadasParcela": "{\"type\":\"Polygon\",\"coordinates\":[[[-62.05,-37.45],[-61.95,-37.45],[-61.95,-37.35],[-62.05,-37.35],[-62.05,-37.45]]]}",
+    "adminEmail": "admin2@ejemplo.com"
+  },
+  {
+    "nombreParcela": "Lote A",
+    "nombreCampo": "Campo Prueba 1",
+    "descripcionParcela": "parcela 1 trigo",
+    "coordenadasParcela": "{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[[[-62.381744,-38.350323],[-62.381744,-38.219891],[-62.119446,-38.219891],[-62.119446,-38.350323],[-62.381744,-38.350323]]]}}",
+    "nombreCultivo": "Avena",
+    "adminEmail": "test@agtechuns.com",
+    "variedad": "INIA 910"
+  }
+]

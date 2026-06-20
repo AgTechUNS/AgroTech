@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { listarCampos } from "@/lib/services/campos";
+import { listarCampos, eliminarCampo } from "@/lib/services/campos";
 import { Campo } from "@/lib/types";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { puedeEditar } from "@/lib/auth/roles";
 import { Card, Table, Button, Spinner } from "@/components/ui";
 
 const FieldsMap = dynamic(
@@ -13,6 +15,7 @@ const FieldsMap = dynamic(
 );
 
 export default function CamposListPage() {
+  const { user } = useAuthContext();
   const [campos, setCampos] = useState<Campo[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -38,9 +41,11 @@ export default function CamposListPage() {
             Unidades productivas registradas
           </p>
         </div>
-        <Link href="/campos/crear">
-          <Button>+ Nuevo campo</Button>
-        </Link>
+        {puedeEditar(user) && (
+          <Link href="/campos/crear">
+            <Button>+ Nuevo campo</Button>
+          </Link>
+        )}
       </div>
 
       <Card style={{ marginBottom: "1.5rem", padding: "0.5rem" }}>
@@ -61,6 +66,31 @@ export default function CamposListPage() {
                 )},
                 { header: "Descripción", accessor: (c: Campo) => c.descripcionCampo ?? "—" },
                 { header: "Coordenadas", accessor: () => "GeoJSON" },
+                ...(puedeEditar(user)
+                  ? [{
+                      header: "Acciones",
+                      accessor: (c: Campo) => (
+                        <div style={{ display: "flex", gap: "0.4rem" }}>
+                          <Link href={`/campos/${encodeURIComponent(c.nombreCampo)}/editar`}>
+                            <Button variant="ghost" style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem" }}>Editar</Button>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", color: "#e74c3c" }}
+                            onClick={async () => {
+                              if (!window.confirm(`¿Eliminar "${c.nombreCampo}"?`)) return;
+                              try {
+                                await eliminarCampo(c.nombreCampo);
+                                setCampos((prev) => prev.filter((x) => x.nombreCampo !== c.nombreCampo));
+                              } catch { }
+                            }}
+                          >
+                            Eliminar
+                          </Button>
+                        </div>
+                      ),
+                    } as { header: string; accessor: (c: Campo) => React.ReactNode }
+                  ] : []),
               ]}
               data={campos}
               keyExtractor={(c) => c.nombreCampo}

@@ -1,20 +1,26 @@
-import { Cultivo, PaginatedResponse } from "@/lib/types";
+import { Cultivo, CatalogoCultivo, PaginatedResponse } from "@/lib/types";
+import { fetchWithAuth } from "@/lib/auth";
 
 export async function listarCultivos(page = 1, limit = 50): Promise<PaginatedResponse<Cultivo>> {
-  const res = await fetch(`/api/cultivos?page=${page}&limit=${limit}`);
+  const res = await fetchWithAuth(`/api/cultivos?page=${page}&limit=${limit}`);
   if (!res.ok) throw new Error("Error al obtener cultivos");
+  return res.json();
+}
+
+export async function listarCatalogoCultivos(): Promise<CatalogoCultivo[]> {
+  const res = await fetchWithAuth("/api/cultivos/catalogo");
+  if (!res.ok) throw new Error("Error al obtener catálogo de cultivos");
   return res.json();
 }
 
 export interface CrearCultivoPayload {
   nombreCultivo: string;
-  umbralHumedadMinima: number;
+  variedad: string;
 }
 
 export async function crearCultivo(payload: CrearCultivoPayload): Promise<void> {
-  const res = await fetch("/api/cultivos", {
+  const res = await fetchWithAuth("/api/cultivos", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {

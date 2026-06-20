@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { listarCampos } from "@/lib/services/campos";
-import { listarParcelas } from "@/lib/services/parcelas";
+import { listarCampos, eliminarCampo } from "@/lib/services/campos";
+import { listarParcelas, eliminarParcela } from "@/lib/services/parcelas";
 import { listarSensores } from "@/lib/services/sensores";
 import { Campo, Parcela, Sensor } from "@/lib/types";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { puedeEditar } from "@/lib/auth/roles";
 import { Card, Table, Button, Spinner } from "@/components/ui";
 
 const FieldsMap = dynamic(
@@ -18,6 +20,7 @@ const FieldsMap = dynamic(
 export default function CampoDetallePage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuthContext();
   const nombreCampo = decodeURIComponent(params.nombreCampo as string);
   const [campo, setCampo] = useState<Campo | null>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
@@ -63,9 +66,29 @@ export default function CampoDetallePage() {
           </p>
         </div>
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <Link href={`/campos/${encodeURIComponent(nombreCampo)}/parcelas/crear`}>
-            <Button>+ Nueva parcela</Button>
-          </Link>
+          {puedeEditar(user) && (
+            <>
+              <Link href={`/campos/${encodeURIComponent(nombreCampo)}/editar`}>
+                <Button variant="ghost">Editar</Button>
+              </Link>
+              <Link href={`/campos/${encodeURIComponent(nombreCampo)}/parcelas/crear`}>
+                <Button>+ Nueva parcela</Button>
+              </Link>
+              <Button
+                variant="ghost"
+                style={{ color: "#e74c3c" }}
+                onClick={async () => {
+                  if (!window.confirm(`¿Eliminar "${campo.nombreCampo}" y sus parcelas?`)) return;
+                  try {
+                    await eliminarCampo(campo.nombreCampo);
+                    router.push("/campos");
+                  } catch { }
+                }}
+              >
+                Eliminar
+              </Button>
+            </>
+          )}
           <Button variant="ghost" onClick={() => router.push("/campos")}>
             Volver
           </Button>
@@ -73,7 +96,7 @@ export default function CampoDetallePage() {
       </div>
 
       <Card style={{ padding: "0.5rem", marginBottom: "1.5rem" }}>
-        <FieldsMap fields={[campo]} parcels={parcelas} height={400} />
+        <FieldsMap fields={[campo]} parcels={parcelas} sensores={sensores} height={400} />
       </Card>
 
       <Card title={`Parcelas (${parcelas.length})`}>
@@ -84,8 +107,33 @@ export default function CampoDetallePage() {
                 {p.nombreParcela}
               </Link>
             )},
-            { header: "Cultivo", accessor: (p: Parcela) => p.nombreCultivo ?? "—" },
+            { header: "Cultivo", accessor: (p: Parcela) => p.nombreCultivo ? `${p.nombreCultivo} — ${p.variedad}` : "—" },
             { header: "Descripción", accessor: (p: Parcela) => p.descripcionParcela ?? "—" },
+            ...(puedeEditar(user)
+              ? [{
+                  header: "Acciones",
+                  accessor: (p: Parcela) => (
+                    <div style={{ display: "flex", gap: "0.4rem" }}>
+                      <Link href={`/campos/${encodeURIComponent(nombreCampo)}/${encodeURIComponent(p.nombreParcela)}/editar`}>
+                        <Button variant="ghost" style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem" }}>Editar</Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", color: "#e74c3c" }}
+                        onClick={async () => {
+                          if (!window.confirm(`¿Eliminar "${p.nombreParcela}"?`)) return;
+                          try {
+                            await eliminarParcela(nombreCampo, p.nombreParcela);
+                            setParcelas((prev) => prev.filter((x) => x.nombreParcela !== p.nombreParcela));
+                          } catch { }
+                        }}
+                      >
+                        Eliminar
+                      </Button>
+                    </div>
+                  ),
+                } as { header: string; accessor: (p: Parcela) => React.ReactNode }
+              ] : []),
           ]}
           data={parcelas}
           keyExtractor={(p) => p.nombreParcela}

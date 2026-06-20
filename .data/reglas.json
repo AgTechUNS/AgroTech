@@ -1,0 +1,50 @@
+[
+  {
+    "metrica": "temperatura",
+    "operador": ">=",
+    "valor": 38,
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "metrica": "humedad_suelo",
+    "operador": "<=",
+    "valor": 20,
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "metrica": "precipitacion",
+    "operador": "<",
+    "valor": 5,
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "metrica": "viento",
+    "operador": ">=",
+    "valor": 50,
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "metrica": "ndvi",
+    "operador": "<=",
+    "valor": 0.3,
+    "adminEmail": "test@agtechuns.com"
+  },
+  {
+    "metrica": "temperatura",
+    "operador": ">=",
+    "valor": 35,
+    "adminEmail": "admin2@ejemplo.com"
+  },
+  {
+    "metrica": "humedad_suelo",
+    "operador": "<=",
+    "valor": 25,
+    "adminEmail": "admin2@ejemplo.com"
+  },
+  {
+    "metrica": "temperatura",
+    "operador": ">=",
+    "valor": 123,
+    "adminEmail": "test@agtechuns.com"
+  }
+]

@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { crearCampo } from "@/lib/services/campos";
+import { crearCampo, listarCampos } from "@/lib/services/campos";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { puedeEditar } from "@/lib/auth/roles";
 import { Card, Button, Input } from "@/components/ui";
+import type { ExistingPolygon } from "@/components/map/MapSelector";
 
 const MapSelector = dynamic(
   () => import("@/components/map/MapSelector").then((m) => m.MapSelector),
@@ -23,9 +26,23 @@ type FormData = z.infer<typeof schema>;
 
 export default function CrearCampoPage() {
   const router = useRouter();
+  const { user } = useAuthContext();
   const [submitting, setSubmitting] = useState(false);
   const [polygon, setPolygon] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [existingPolygons, setExistingPolygons] = useState<ExistingPolygon[]>([]);
+
+  useEffect(() => {
+    if (!puedeEditar(user)) router.push("/dashboard");
+  }, [user, router]);
+
+  useEffect(() => {
+    listarCampos(1, 100).then((res) => {
+      setExistingPolygons(
+        res.data.map((c) => ({ geojson: c.coordenadasCampo, label: c.nombreCampo }))
+      );
+    }).catch(() => {});
+  }, []);
 
   const {
     register,
@@ -56,6 +73,8 @@ export default function CrearCampoPage() {
     }
   }
 
+  if (!puedeEditar(user)) return null;
+
   return (
     <div>
       <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>
@@ -85,7 +104,7 @@ export default function CrearCampoPage() {
             <span style={{ fontSize: "0.85rem", fontWeight: 600, display: "block", marginBottom: "0.4rem" }}>
               Perímetro del campo
             </span>
-            <MapSelector onPolygonChange={setPolygon} />
+            <MapSelector onPolygonChange={setPolygon} existingPolygons={existingPolygons} />
             {polygon && (
               <span style={{ fontSize: "0.8rem", color: "#27ae60", marginTop: "0.3rem", display: "block" }}>
                 ✅ Polígono definido
