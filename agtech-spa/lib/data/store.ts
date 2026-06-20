@@ -122,9 +122,10 @@ export function deleteParcelasByCampo(nombreCampo: string): void {
 
 // --- Reglas ---
 
-export function readReglas(adminEmail?: string): Regla[] {
-  const all = readFile(REGLAS_PATH, SEED_REGLAS);
-  if (adminEmail) return all.filter((r) => r.adminEmail === adminEmail);
+export function readReglas(adminEmail?: string, nombreCampo?: string): Regla[] {
+  let all = readFile(REGLAS_PATH, SEED_REGLAS);
+  if (adminEmail) all = all.filter((r) => r.adminEmail === adminEmail);
+  if (nombreCampo) all = all.filter((r) => r.nombreCampo === nombreCampo);
   return all;
 }
 
@@ -132,6 +133,19 @@ export function addRegla(regla: Regla): void {
   const reglas = readReglas();
   reglas.push(regla);
   writeFile(REGLAS_PATH, reglas);
+}
+
+export function updateRegla(id: string, data: Partial<Regla>): void {
+  const reglas = readReglas();
+  const idx = reglas.findIndex((r) => r.id === id);
+  if (idx === -1) return;
+  reglas[idx] = { ...reglas[idx], ...data };
+  writeFile(REGLAS_PATH, reglas);
+}
+
+export function deleteRegla(id: string): void {
+  const reglas = readReglas();
+  writeFile(REGLAS_PATH, reglas.filter((r) => r.id !== id));
 }
 
 // --- Sensores ---

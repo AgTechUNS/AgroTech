@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, ReactNode, Dispatch, SetStateAction } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { listarCampos, eliminarCampo } from "@/lib/services/campos";
 import { listarParcelas, eliminarParcela } from "@/lib/services/parcelas";
 import { listarSensores } from "@/lib/services/sensores";
-import { Campo, Parcela, Sensor } from "@/lib/types";
+import { listarReglas, editarRegla, eliminarRegla } from "@/lib/services/reglas";
+import { Campo, Parcela, Sensor, Regla } from "@/lib/types";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { puedeEditar } from "@/lib/auth/roles";
 import { Card, Table, Button, Spinner } from "@/components/ui";
@@ -25,6 +26,7 @@ export default function CampoDetallePage() {
   const [campo, setCampo] = useState<Campo | null>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [sensores, setSensores] = useState<Sensor[]>([]);
+  const [reglas, setReglas] = useState<Regla[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,11 +37,13 @@ export default function CampoDetallePage() {
       ),
       listarParcelas(nombreCampo).then((res) => res.data),
       listarSensores(),
+      listarReglas(1, 50, nombreCampo).then((res) => res.data),
     ])
-      .then(([c, p, s]) => {
+      .then(([c, p, s, r]) => {
         setCampo(c);
         setParcelas(p);
         setSensores(s.filter((sen) => sen.nombreCampo === nombreCampo));
+        setReglas(r);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -109,36 +113,58 @@ export default function CampoDetallePage() {
             )},
             { header: "Cultivo", accessor: (p: Parcela) => p.nombreCultivo ? `${p.nombreCultivo} — ${p.variedad}` : "—" },
             { header: "Descripción", accessor: (p: Parcela) => p.descripcionParcela ?? "—" },
-            ...(puedeEditar(user)
-              ? [{
-                  header: "Acciones",
-                  accessor: (p: Parcela) => (
-                    <div style={{ display: "flex", gap: "0.4rem" }}>
-                      <Link href={`/campos/${encodeURIComponent(nombreCampo)}/${encodeURIComponent(p.nombreParcela)}/editar`}>
-                        <Button variant="ghost" style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem" }}>Editar</Button>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", color: "#e74c3c" }}
-                        onClick={async () => {
-                          if (!window.confirm(`¿Eliminar "${p.nombreParcela}"?`)) return;
-                          try {
-                            await eliminarParcela(nombreCampo, p.nombreParcela);
-                            setParcelas((prev) => prev.filter((x) => x.nombreParcela !== p.nombreParcela));
-                          } catch { }
-                        }}
-                      >
-                        Eliminar
-                      </Button>
-                    </div>
-                  ),
-                } as { header: string; accessor: (p: Parcela) => React.ReactNode }
-              ] : []),
+            ...(puedeEditar(user) ? accionesColumnsParcelas(nombreCampo, setParcelas) : []),
           ]}
           data={parcelas}
           keyExtractor={(p) => p.nombreParcela}
           emptyMessage="Este campo no tiene parcelas aún."
         />
+      </Card>
+
+      <Card title={`Reglas (${reglas.length})`} style={{ marginTop: "1.5rem" }}>
+        <Table
+          columns={[
+            { header: "Nombre", accessor: (r: Regla) => r.nombre },
+            { header: "Fórmula", accessor: (r: Regla) => <code style={{ background: "#f1f5f9", padding: "0.15rem 0.4rem", borderRadius: "4px", fontSize: "0.85rem" }}>{r.formula}</code> },
+            {
+              header: "Estado",
+              accessor: (r: Regla) => (
+                <button
+                  onClick={async () => {
+                    if (!puedeEditar(user)) return;
+                    try {
+                      await editarRegla(r.id, { habilitada: !r.habilitada });
+                      setReglas((prev) => prev.map((x) => x.id === r.id ? { ...x, habilitada: !x.habilitada } : x));
+                    } catch { }
+                  }}
+                  style={{
+                    background: r.habilitada ? "#16a34a" : "#94a3b8",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "12px",
+                    padding: "0.2rem 0.8rem",
+                    fontSize: "0.8rem",
+                    cursor: puedeEditar(user) ? "pointer" : "default",
+                    fontWeight: 600,
+                  }}
+                >
+                  {r.habilitada ? "Activa" : "Inactiva"}
+                </button>
+              ),
+            },
+            ...(puedeEditar(user) ? accionesColumnsReglasDetail(setReglas) : []),
+          ]}
+          data={reglas}
+          keyExtractor={(r) => r.id}
+          emptyMessage="No hay reglas asignadas a este campo."
+        />
+        {puedeEditar(user) && (
+          <div style={{ marginTop: "0.8rem" }}>
+            <Link href={`/reglas/crear`}>
+              <Button variant="ghost">+ Asignar nueva regla</Button>
+            </Link>
+          </div>
+        )}
       </Card>
 
       <Card title={`Sensores (${sensores.length})`} style={{ marginTop: "1.5rem" }}>
@@ -166,4 +192,61 @@ export default function CampoDetallePage() {
       </Card>
     </div>
   );
+}
+
+function accionesColumnsParcelas(
+  nombreCampo: string,
+  setParcelas: Dispatch<SetStateAction<Parcela[]>>
+): { header: string; accessor: (p: Parcela) => ReactNode }[] {
+  return [{
+    header: "Acciones",
+    accessor: (p: Parcela) => (
+      <div style={{ display: "flex", gap: "0.4rem" }}>
+        <Link href={`/campos/${encodeURIComponent(nombreCampo)}/${encodeURIComponent(p.nombreParcela)}/editar`}>
+          <Button variant="ghost" style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem" }}>Editar</Button>
+        </Link>
+        <Button
+          variant="ghost"
+          style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", color: "#e74c3c" }}
+          onClick={async () => {
+            if (!window.confirm(`¿Eliminar "${p.nombreParcela}"?`)) return;
+            try {
+              await eliminarParcela(nombreCampo, p.nombreParcela);
+              setParcelas((prev) => prev.filter((x) => x.nombreParcela !== p.nombreParcela));
+            } catch { }
+          }}
+        >
+          Eliminar
+        </Button>
+      </div>
+    ),
+  }];
+}
+
+function accionesColumnsReglasDetail(
+  setReglas: Dispatch<SetStateAction<Regla[]>>
+): { header: string; accessor: (r: Regla) => ReactNode }[] {
+  return [{
+    header: "Acciones",
+    accessor: (r: Regla) => (
+      <div style={{ display: "flex", gap: "0.4rem" }}>
+        <Link href={`/reglas/${encodeURIComponent(r.id)}/editar`}>
+          <Button variant="ghost" style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem" }}>Editar</Button>
+        </Link>
+        <Button
+          variant="ghost"
+          style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", color: "#e74c3c" }}
+          onClick={async () => {
+            if (!window.confirm(`¿Eliminar la regla "${r.nombre}"?`)) return;
+            try {
+              await eliminarRegla(r.id);
+              setReglas((prev) => prev.filter((x) => x.id !== r.id));
+            } catch { }
+          }}
+        >
+          Eliminar
+        </Button>
+      </div>
+    ),
+  }];
 }

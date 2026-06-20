@@ -39,3 +39,7 @@ secrets/
 # Python
 __pycache__/
 *.pyc
+
+# SPA
+agtech-spa/node_modules/
+agtech-spa/.next/
