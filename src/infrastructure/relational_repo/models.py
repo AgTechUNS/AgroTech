@@ -7,7 +7,6 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     ForeignKeyConstraint,
-    PrimaryKeyConstraint,
     String,
     Text,
 )
@@ -22,11 +21,6 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-# ──────────────────────────────────────────────
-# Entidades Independientes
-# ──────────────────────────────────────────────
-
-
 class Usuario(Base):
     __tablename__ = "usuario"
 
@@ -34,6 +28,9 @@ class Usuario(Base):
     nombre: Mapped[str] = mapped_column(String(255), nullable=False)
     telefono: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     hash_password: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    def __repr__(self):
+        return f"<Usuario {self.email_usuario!r}>"
 
 
 class Campo(Base):
@@ -43,12 +40,18 @@ class Campo(Base):
     coordenadas_campo: Mapped[str] = mapped_column(Text, nullable=False, comment="Polígono GeoJSON")
     descripcion_campo: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+    def __repr__(self):
+        return f"<Campo {self.nombre_campo!r}>"
+
 
 class Rol(Base):
     __tablename__ = "rol"
 
     nombre_rol: Mapped[str] = mapped_column(String(100), primary_key=True)
     descripcion: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    def __repr__(self):
+        return f"<Rol {self.nombre_rol!r}>"
 
 
 class Cultivo(Base):
@@ -57,12 +60,18 @@ class Cultivo(Base):
     nombre_cultivo: Mapped[str] = mapped_column(String(255), primary_key=True)
     variedad: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
+    def __repr__(self):
+        return f"<Cultivo {self.nombre_cultivo!r}>"
+
 
 class Sensor(Base):
     __tablename__ = "sensor"
 
     nombre_codigo_sensor: Mapped[str] = mapped_column(String(255), primary_key=True)
     estado: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, comment="True=activo, False=inactivo")
+
+    def __repr__(self):
+        return f"<Sensor {self.nombre_codigo_sensor!r} activo={self.estado}>"
 
 
 class ImagenSatelital(Base):
@@ -72,6 +81,9 @@ class ImagenSatelital(Base):
     fecha_captura: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     proveedor: Mapped[str] = mapped_column(String(255), nullable=False)
 
+    def __repr__(self):
+        return f"<ImagenSatelital {self.id_imagen!r}>"
+
 
 class EjecucionBatch(Base):
     __tablename__ = "ejecucion_batch"
@@ -80,10 +92,8 @@ class EjecucionBatch(Base):
     estado: Mapped[str] = mapped_column(String(50), nullable=False, comment="EN_CURSO, COMPLETADO, FALLIDO")
     fecha_fin: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
-
-# ──────────────────────────────────────────────
-# Entidades Dependientes (Jerárquicas)
-# ──────────────────────────────────────────────
+    def __repr__(self):
+        return f"<EjecucionBatch {self.fecha_ini.isoformat()} estado={self.estado}>"
 
 
 class Parcela(Base):
@@ -96,6 +106,9 @@ class Parcela(Base):
 
     campo: Mapped["Campo"] = relationship("Campo")
 
+    def __repr__(self):
+        return f"<Parcela {self.nombre_parcela!r} en {self.nombre_campo!r}>"
+
 
 class Regla(Base):
     __tablename__ = "regla"
@@ -107,11 +120,11 @@ class Regla(Base):
     umbral: Mapped[float] = mapped_column(Float, nullable=False)
 
     __table_args__ = (
-        ForeignKeyConstraint(
-            ["nombre_campo"],
-            ["campo.nombre_campo"],
-        ),
+        ForeignKeyConstraint(["nombre_campo"], ["campo.nombre_campo"]),
     )
+
+    def __repr__(self):
+        return f"<Regla {self.nombre_regla!r} umbral={self.umbral}>"
 
 
 class VentanaTemporal(Base):
@@ -122,6 +135,9 @@ class VentanaTemporal(Base):
     nombre_parcela: Mapped[str] = mapped_column(String(255), ForeignKey("parcela.nombre_parcela"), nullable=False)
 
     parcela: Mapped["Parcela"] = relationship("Parcela")
+
+    def __repr__(self):
+        return f"<VentanaTemporal {self.fecha_ini.isoformat()} - {self.fecha_fin.isoformat()}>"
 
 
 class Alerta(Base):
@@ -136,10 +152,8 @@ class Alerta(Base):
     parcela: Mapped["Parcela"] = relationship("Parcela")
     usuario: Mapped["Usuario"] = relationship("Usuario")
 
-
-# ──────────────────────────────────────────────
-# Asociaciones (Tablas Intermedias M:N)
-# ──────────────────────────────────────────────
+    def __repr__(self):
+        return f"<Alerta #{self.id} parcela={self.nombre_parcela!r}>"
 
 
 class UsuarioRolCampo(Base):
@@ -153,6 +167,9 @@ class UsuarioRolCampo(Base):
     rol: Mapped["Rol"] = relationship("Rol")
     campo: Mapped["Campo"] = relationship("Campo")
 
+    def __repr__(self):
+        return f"<UsuarioRolCampo {self.email_usuario} / {self.nombre_rol} / {self.nombre_campo}>"
+
 
 class ParcelaImagenSatelital(Base):
     __tablename__ = "parcela_imagen_satelital"
@@ -165,6 +182,9 @@ class ParcelaImagenSatelital(Base):
     imagen: Mapped["ImagenSatelital"] = relationship("ImagenSatelital")
     parcela: Mapped["Parcela"] = relationship("Parcela")
 
+    def __repr__(self):
+        return f"<ParcelaImagenSatelital {self.id_imagen} / {self.nombre_parcela}>"
+
 
 class RegistroCultivo(Base):
     __tablename__ = "registro_cultivo"
@@ -176,6 +196,9 @@ class RegistroCultivo(Base):
 
     parcela: Mapped["Parcela"] = relationship("Parcela")
     cultivo: Mapped["Cultivo"] = relationship("Cultivo")
+
+    def __repr__(self):
+        return f"<RegistroCultivo {self.nombre_parcela} / {self.nombre_cultivo}>"
 
 
 class SensorParcela(Base):
@@ -190,6 +213,9 @@ class SensorParcela(Base):
     sensor: Mapped["Sensor"] = relationship("Sensor")
     parcela: Mapped["Parcela"] = relationship("Parcela")
     campo: Mapped["Campo"] = relationship("Campo")
+
+    def __repr__(self):
+        return f"<SensorParcela {self.nombre_codigo_sensor} / {self.nombre_parcela}>"
 
 
 class Prediccion(Base):
@@ -213,3 +239,6 @@ class Prediccion(Base):
             ["ventana_temporal.fecha_ini", "ventana_temporal.fecha_fin"],
         ),
     )
+
+    def __repr__(self):
+        return f"<Prediccion #{self.id} campo={self.nombre_campo!r}>"

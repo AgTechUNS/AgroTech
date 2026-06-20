@@ -5,8 +5,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from core.config import settings
-from infrastructure.relational_repo.adapter import SQLAlchemyRelationalRepository
 from infrastructure.relational_repo.database import Database
+from infrastructure.relational_repo.repository import RelationalRepository
 from infrastructure.time_series_repo.influx_client import TimeSeriesRepository
 from modules.analytics_engine.router import router as analytics_router
 from modules.analytics_engine.tasks import run_batch_diario
@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     try:
         db = Database(dsn=settings.database_dsn, echo=settings.database_echo)
         await db.create_tables()
-        app.state.relational_repo = SQLAlchemyRelationalRepository(db)
+        app.state.relational_repo = RelationalRepository(db.session_factory)
         logger.info("Base de datos relacional conectada exitosamente")
     except Exception as e:
         logger.warning("Base de datos relacional no disponible: %s", e)
