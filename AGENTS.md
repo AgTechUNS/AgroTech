@@ -24,21 +24,21 @@ src/                        # Python package root (run all commands from repo ro
 All commands run from repo root. `src/` is implicitly the Python path root — do NOT `cd src/`.
 
 ```sh
-# FastAPI server (external-data gateway + health)
-uvicorn src.main:app --reload
-# or: python -m uvicorn src.main:app --reload
+# One-command startup (3 windows: backend + SPA + MQTT ingestion)
+.\start-all.ps1
 
-# IoT telemetry pipeline (MQTT → InfluxDB)
-python -m src.infrastructure.time_series_repo.bootstrap
+# Optional: include sensor simulator (needs Mosquitto on Docker)
+.\start-all.ps1 -Simulador
 
-# Sensor simulator (curses TUI)
-python tools/simulador_sensores/lns_console.py
+# Stop everything
+.\stop-all.ps1
 
-# MQTT broker (Mosquitto via Docker)
-docker compose -f deploy/broker/docker-compose.yml up -d
-
-# Run unit tests
-pytest tests/ -v
+# Individual commands (all from repo root):
+#   FastAPI server    → uvicorn src.main:app --reload
+#   MQTT ingestion    → python -m src.infrastructure.time_series_repo.bootstrap
+#   Sensor simulator  → python tools/simulador_sensores/lns_console.py
+#   Mosquitto broker  → docker compose -f deploy/broker/docker-compose.yml up -d
+#   Unit tests        → pytest tests/ -v
 ```
 
 ## Credentials & env loading

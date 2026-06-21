@@ -33,7 +33,14 @@ async def main():
     try:
         print("Iniciando sistema integral de telemetría...")
         ingestion_component.start_workers(loop)
-        ingestion_component.start()
+        try:
+            ingestion_component.start()
+        except ConnectionRefusedError:
+            print("[Bootstrap] ERROR: No se pudo conectar al broker MQTT en localhost:1883.")
+            print("[Bootstrap] Asegurate de que Mosquitto (Docker) esté corriendo:")
+            print("[Bootstrap]   docker compose -f deploy/broker/docker-compose.yml up -d")
+            print("[Bootstrap] Saliendo...")
+            return
         print("[Bootstrap] Ingestion corriendo. Presioná Ctrl+C para detener.")
         await stop_event.wait()
     except KeyboardInterrupt:
