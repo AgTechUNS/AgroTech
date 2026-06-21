@@ -8,6 +8,13 @@ import { Campo, Parcela, Sensor, Lectura } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { TILE_LIGHT, TILE_DARK, TILE_ATTR } from "./tiles";
 
+function ndviColor(ndvi: number): string {
+  if (ndvi >= 0.7) return "#22c55e";
+  if (ndvi >= 0.5) return "#86efac";
+  if (ndvi >= 0.3) return "#facc15";
+  return "#ef4444";
+}
+
 interface FieldsMapProps {
   fields?: Campo[];
   parcels?: Parcela[];
@@ -82,7 +89,11 @@ export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400 }:
         tooltip += `<br/><span style="font-size:0.85rem;color:#94a3b8;">Parcelas: ${parcelCount} | Sensores: ${sensorCount}</span>`;
         allItems.push({
           geo,
-          style: { color: FIELD_COLORS[i % FIELD_COLORS.length], weight: 2, fillOpacity: 0.12 },
+          style: {
+            color: ndvi !== undefined ? ndviColor(ndvi) : FIELD_COLORS[i % FIELD_COLORS.length],
+            weight: 2,
+            fillOpacity: ndvi !== undefined ? 0.3 : 0.12,
+          },
           tooltip,
         });
         allCoords.push({ geoStr: f.coordenadasCampo });
@@ -98,6 +109,7 @@ export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400 }:
         const activos = parcelaSensores.filter((s) => s.activo);
         let tooltip = `<b>${p.nombreParcela}</b>`;
         if (p.nombreCultivo) tooltip += `<br/>${p.nombreCultivo}${p.variedad ? ` — ${p.variedad}` : ""}`;
+        if (ndvi !== undefined) tooltip += `<br/>🌿 NDVI: <b>${ndvi.toFixed(2)}</b>`;
         if (p.descripcionParcela) tooltip += `<br/><span style="font-size:0.85rem;color:#94a3b8;">${p.descripcionParcela}</span>`;
         if (activos.length > 0) {
           tooltip += `<br/><hr style="border-color:rgba(255,255,255,0.1);margin:4px 0;"/>`;
@@ -115,7 +127,11 @@ export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400 }:
         }
         allItems.push({
           geo,
-          style: { color: PARCEL_COLORS[i % PARCEL_COLORS.length], weight: 3, fillOpacity: 0.2 },
+          style: {
+            color: ndvi !== undefined ? ndviColor(ndvi) : PARCEL_COLORS[i % PARCEL_COLORS.length],
+            weight: 3,
+            fillOpacity: ndvi !== undefined ? 0.35 : 0.2,
+          },
           tooltip,
         });
         allCoords.push({ geoStr: p.coordenadasParcela });
@@ -123,8 +139,10 @@ export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400 }:
     });
   }
 
+  const hasNdvi = ndviData && Object.values(ndviData).some((v) => v !== undefined);
+
   return (
-    <div style={{ borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid var(--border)" }}>
+    <div style={{ borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid var(--border)", position: "relative" }}>
       <MapContainer
         center={[-38.0, -62.5]}
         zoom={6}
@@ -153,6 +171,39 @@ export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400 }:
         ))}
         <FitBounds items={allCoords} getCoords={(item) => (item as { geoStr: string }).geoStr} />
       </MapContainer>
+      {hasNdvi && (
+        <div style={{
+          position: "absolute",
+          bottom: 12,
+          right: 12,
+          background: "var(--bg-glass, rgba(0,0,0,0.75))",
+          backdropFilter: "blur(8px)",
+          padding: "0.5rem 0.75rem",
+          borderRadius: "var(--radius)",
+          fontSize: "0.75rem",
+          zIndex: 1000,
+          lineHeight: 1.6,
+          border: "1px solid var(--border)",
+        }}>
+          <div style={{ fontWeight: 600, marginBottom: 4, fontSize: "0.8rem" }}>NDVI</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ display: "inline-block", width: 14, height: 14, borderRadius: 3, background: "#22c55e" }} />
+            <span>&ge; 0.7</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ display: "inline-block", width: 14, height: 14, borderRadius: 3, background: "#86efac" }} />
+            <span>0.5 – 0.7</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ display: "inline-block", width: 14, height: 14, borderRadius: 3, background: "#facc15" }} />
+            <span>0.3 – 0.5</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ display: "inline-block", width: 14, height: 14, borderRadius: 3, background: "#ef4444" }} />
+            <span>&lt; 0.3</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

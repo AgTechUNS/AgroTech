@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { listarCampos } from "@/lib/services/campos";
 import { listarParcelas, eliminarParcela } from "@/lib/services/parcelas";
 import { listarSensores, listarLecturas } from "@/lib/services/sensores";
+import { obtenerSatelital } from "@/lib/services/external";
 import { Campo, Parcela, Sensor, Lectura } from "@/lib/types";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { puedeEditar } from "@/lib/auth/roles";
@@ -30,6 +31,8 @@ export default function ParcelaDetallePage() {
   const [sensores, setSensores] = useState<Sensor[]>([]);
   const [lecturas, setLecturas] = useState<Lectura[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ndviData, setNdviData] = useState<Record<string, number>>({});
+  const [satelitalError, setSatelitalError] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -46,6 +49,12 @@ export default function ParcelaDetallePage() {
         setCampo(c);
         setParcela(p);
         setSensores(s.filter((sen) => sen.nombreCampo === nombreCampo && sen.nombreParcela === nombreParcela));
+        setLecturas(l);
+        if (p) {
+          obtenerSatelital(p.coordenadasParcela)
+            .then((data) => setNdviData({ [p.nombreParcela]: data.ndvi, [c?.nombreCampo ?? ""]: data.ndvi }))
+            .catch(() => setSatelitalError(true));
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -110,8 +119,28 @@ export default function ParcelaDetallePage() {
       </div>
 
       <Card style={{ padding: "0.5rem", marginBottom: "1.5rem" }}>
-        {campo && <FieldsMap fields={[campo]} parcels={[parcela]} sensores={sensores} lecturas={lecturas} height={300} />}
+        {campo && <FieldsMap fields={[campo]} parcels={[parcela]} sensores={sensores} ndviData={ndviData} height={300} />}
       </Card>
+      {ndviData[nombreParcela] !== undefined && (
+        <Card style={{ marginBottom: "1.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <span style={{ fontSize: "1.5rem" }}>🌿</span>
+            <div>
+              <p style={{ margin: 0, fontWeight: 600 }}>NDVI: {ndviData[nombreParcela].toFixed(3)}</p>
+              <p style={{ margin: "0.2rem 0 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                Índice de vegetación de diferencia normalizada — {ndviData[nombreParcela] >= 0.7 ? "Vegetación muy saludable" : ndviData[nombreParcela] >= 0.5 ? "Vegetación moderada" : ndviData[nombreParcela] >= 0.3 ? "Vegetación escasa" : "Suelo desnudo / estrés severo"}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+      {satelitalError && (
+        <Card style={{ marginBottom: "1.5rem" }}>
+          <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.85rem" }}>
+            ⚠️ No se pudieron obtener datos satelitales. Mostrando colores por defecto en el mapa.
+          </p>
+        </Card>
+      )}
 
       <Card title={`Sensores (${activos.length} activos)`} style={{ marginBottom: "1.5rem" }}>
         {activos.length === 0 ? (
