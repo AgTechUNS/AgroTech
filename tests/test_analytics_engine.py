@@ -128,6 +128,10 @@ def test_evaluar_condicion_igual():
 def test_clasificar_alerta_rojo():
     assert _clasificar_alerta(5, 10, "<") == "rojo"
 
+def test_clasificar_alerta_amarillo():
+    # Para ">" con umbral 38: rojo es > 38, amarillo es > 34.2 (38 - 3.8)
+    assert _clasificar_alerta(36, 38, ">") == "amarillo"
+
 def test_clasificar_alerta_verde():
     assert _clasificar_alerta(50, 10, "<") == "verde"
 

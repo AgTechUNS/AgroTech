@@ -1,3 +1,4 @@
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -8,7 +9,17 @@ from infrastructure.relational_repo.models import Base
 
 class Database:
     def __init__(self, dsn: str, echo: bool = False, connect_args: dict | None = None):
-        self._engine = create_async_engine(dsn, echo=echo, connect_args=connect_args or {})
+        connect_args = connect_args or {}
+        if os.getenv("DATABASE_SSL", "").lower() in ("require", "true", "1"):
+            connect_args.setdefault("ssl", True)
+        self._engine = create_async_engine(
+            dsn,
+            echo=echo,
+            connect_args=connect_args,
+            pool_pre_ping=True,
+            pool_size=10,
+            max_overflow=5,
+        )
         self._session_factory = async_sessionmaker(
             self._engine, class_=AsyncSession, expire_on_commit=False
         )

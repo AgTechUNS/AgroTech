@@ -23,7 +23,7 @@ _lock = asyncio.Lock()
 
 
 def _dedup_key(job: NotificationJob) -> str:
-    return f"{job.event_type.value}:{job.field_id}"
+    return f"{job.event_type.value}:{job.field_id}:{job.threshold}"
 
 
 async def is_duplicate(job: NotificationJob) -> bool:
