@@ -8,13 +8,6 @@ import { Campo, Parcela, Sensor, Lectura } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { TILE_LIGHT, TILE_DARK, TILE_ATTR } from "./tiles";
 
-function ndviColor(ndvi: number): string {
-  if (ndvi >= 0.7) return "#22c55e";
-  if (ndvi >= 0.5) return "#86efac";
-  if (ndvi >= 0.3) return "#facc15";
-  return "#ef4444";
-}
-
 interface FieldsMapProps {
   fields?: Campo[];
   parcels?: Parcela[];
@@ -30,11 +23,11 @@ function FitBounds({ items, getCoords }: { items: unknown[]; getCoords: (item: u
     try {
       const coords: [number, number][] = [];
       for (const item of items) {
-        const geo = JSON.parse(getCoords(item));
-        if (geo.type === "Polygon") {
-          geo.coordinates[0].forEach((c: number[]) => coords.push([c[1], c[0]]));
-        } else if (geo.type === "Point") {
-          coords.push([geo.coordinates[1], geo.coordinates[0]]);
+        const geo = toGeoJSON(getCoords(item));
+        if (!geo) continue;
+        const g = geo as GeoJSON.Polygon;
+        if (g.type === "Polygon" && g.coordinates?.[0]) {
+          (g.coordinates[0] as number[][]).forEach((c) => coords.push([c[1], c[0]]));
         }
       }
       if (coords.length > 0) {
@@ -45,6 +38,19 @@ function FitBounds({ items, getCoords }: { items: unknown[]; getCoords: (item: u
     }
   }, [items, map, getCoords]);
   return null;
+}
+
+function toGeoJSON(raw: string): unknown | null {
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && parsed.type) return parsed;
+    if (Array.isArray(parsed) && parsed.length >= 3) {
+      return { type: "Polygon", coordinates: [parsed] };
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 const FIELD_COLORS = ["#60a5fa", "#34d399", "#fbbf24", "#a78bfa", "#f87171", "#2dd4bf"];
@@ -80,69 +86,85 @@ export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400 }:
 
   if (fields) {
     fields.forEach((f, i) => {
-      try {
-        const geo = JSON.parse(f.coordenadasCampo);
-        const parcelCount = parcels?.filter((p) => p.nombreCampo === f.nombreCampo).length ?? 0;
-        const sensorCount = sensoresByCampo[f.nombreCampo] ?? 0;
-        let tooltip = `<b>${f.nombreCampo}</b>`;
-        if (f.descripcionCampo) tooltip += `<br/>${f.descripcionCampo}`;
-        tooltip += `<br/><span style="font-size:0.85rem;color:#94a3b8;">Parcelas: ${parcelCount} | Sensores: ${sensorCount}</span>`;
-        allItems.push({
-          geo,
-          style: {
-            color: ndvi !== undefined ? ndviColor(ndvi) : FIELD_COLORS[i % FIELD_COLORS.length],
-            weight: 2,
-            fillOpacity: ndvi !== undefined ? 0.3 : 0.12,
-          },
-          tooltip,
-        });
-        allCoords.push({ geoStr: f.coordenadasCampo });
-      } catch { /* skip */ }
+      const geo = toGeoJSON(f.coordenadasCampo);
+      if (!geo) return;
+      const parcelCount = parcels?.filter((p) => p.nombreCampo === f.nombreCampo).length ?? 0;
+      const sensorCount = sensoresByCampo[f.nombreCampo] ?? 0;
+      let tooltip = `<b>${f.nombreCampo}</b>`;
+      if (f.descripcionCampo) tooltip += `<br/>${f.descripcionCampo}`;
+      tooltip += `<br/><span style="font-size:0.85rem;color:#94a3b8;">Parcelas: ${parcelCount} | Sensores: ${sensorCount}</span>`;
+      allItems.push({
+        geo,
+        style: {
+          color: FIELD_COLORS[i % FIELD_COLORS.length],
+          weight: 2,
+          fillOpacity: 0.12,
+        },
+        tooltip,
+      });
+      allCoords.push({ geoStr: f.coordenadasCampo });
     });
+  }
+
+  const lecturasByParcela: Record<string, string[]> = {};
+  if (lecturas) {
+    for (const l of lecturas) {
+      const sensorParcela = l.parcelaId || "";
+      if (!sensorParcela) continue;
+      if (!lecturasByParcela[sensorParcela]) lecturasByParcela[sensorParcela] = [];
+      if (!lecturasByParcela[sensorParcela].includes(l.sensorId)) {
+        lecturasByParcela[sensorParcela].push(l.sensorId);
+      }
+    }
   }
 
   if (parcels) {
     parcels.forEach((p, i) => {
-      try {
-        const geo = JSON.parse(p.coordenadasParcela);
-        const parcelaSensores = sensoresByParcela[p.nombreParcela] ?? [];
-        const activos = parcelaSensores.filter((s) => s.activo);
-        let tooltip = `<b>${p.nombreParcela}</b>`;
-        if (p.nombreCultivo) tooltip += `<br/>${p.nombreCultivo}${p.variedad ? ` — ${p.variedad}` : ""}`;
-        if (ndvi !== undefined) tooltip += `<br/>🌿 NDVI: <b>${ndvi.toFixed(2)}</b>`;
-        if (p.descripcionParcela) tooltip += `<br/><span style="font-size:0.85rem;color:#94a3b8;">${p.descripcionParcela}</span>`;
-        if (activos.length > 0) {
-          tooltip += `<br/><hr style="border-color:rgba(255,255,255,0.1);margin:4px 0;"/>`;
-          for (const s of activos) {
-            const ultima = lastLecturaBySensor[s.deviceId];
-            tooltip += `<div style="font-size:0.85rem;margin:2px 0;">`;
-            tooltip += `🛰️ <b>${s.deviceId}</b>`;
-            if (ultima) {
-              tooltip += ` — ${ultima.temperatura != null ? `${ultima.temperatura.toFixed(1)}°C` : "—"} / ${ultima.humedad != null ? `${ultima.humedad.toFixed(1)}%` : "—"}`;
-            } else {
-              tooltip += ` — <span style="color:#94a3b8;">sin datos</span>`;
-            }
-            tooltip += `</div>`;
+      const geo = toGeoJSON(p.coordenadasParcela);
+      if (!geo) return;
+
+      // Sensors from DB for this parcel
+      const parcelaSensores = sensoresByParcela[p.nombreParcela] ?? [];
+      const activos = parcelaSensores.filter((s) => s.activo);
+      // Sensor IDs from lecturas for this parcel
+      const lecturasSensorIds = lecturasByParcela[p.nombreParcela] ?? [];
+      // Union: known sensor IDs from both sources
+      const allSensorIds: string[] = [];
+      activos.forEach(s => { if (!allSensorIds.includes(s.deviceId)) allSensorIds.push(s.deviceId); });
+      lecturasSensorIds.forEach(sid => { if (!allSensorIds.includes(sid)) allSensorIds.push(sid); });
+
+      let tooltip = `<b>${p.nombreParcela}</b>`;
+      if (p.nombreCultivo) tooltip += `<br/>${p.nombreCultivo}${p.variedad ? ` — ${p.variedad}` : ""}`;
+      if (p.descripcionParcela) tooltip += `<br/><span style="font-size:0.85rem;color:#94a3b8;">${p.descripcionParcela}</span>`;
+      if (allSensorIds.length > 0) {
+        tooltip += `<br/><hr style="border-color:rgba(255,255,255,0.1);margin:4px 0;"/>`;
+        for (const sid of allSensorIds) {
+          const ultima = lastLecturaBySensor[sid];
+          tooltip += `<div style="font-size:0.85rem;margin:2px 0;">`;
+          tooltip += `🛰️ <b>${sid}</b>`;
+          if (ultima) {
+            tooltip += ` — ${ultima.temperatura != null ? `${ultima.temperatura.toFixed(1)}°C` : "—"} / ${ultima.humedad != null ? `${ultima.humedad.toFixed(1)}%` : "—"}`;
+          } else {
+            tooltip += ` — <span style="color:#94a3b8;">sin datos</span>`;
           }
+          tooltip += `</div>`;
         }
-        allItems.push({
-          geo,
-          style: {
-            color: ndvi !== undefined ? ndviColor(ndvi) : PARCEL_COLORS[i % PARCEL_COLORS.length],
-            weight: 3,
-            fillOpacity: ndvi !== undefined ? 0.35 : 0.2,
-          },
-          tooltip,
-        });
-        allCoords.push({ geoStr: p.coordenadasParcela });
-      } catch { /* skip */ }
+      }
+      allItems.push({
+        geo,
+        style: {
+          color: PARCEL_COLORS[i % PARCEL_COLORS.length],
+          weight: 3,
+          fillOpacity: 0.2,
+        },
+        tooltip,
+      });
+      allCoords.push({ geoStr: p.coordenadasParcela });
     });
   }
 
-  const hasNdvi = ndviData && Object.values(ndviData).some((v) => v !== undefined);
-
   return (
-    <div style={{ borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid var(--border)", position: "relative" }}>
+    <div style={{ borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid var(--border)" }}>
       <MapContainer
         center={[-38.0, -62.5]}
         zoom={6}
@@ -171,39 +193,6 @@ export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400 }:
         ))}
         <FitBounds items={allCoords} getCoords={(item) => (item as { geoStr: string }).geoStr} />
       </MapContainer>
-      {hasNdvi && (
-        <div style={{
-          position: "absolute",
-          bottom: 12,
-          right: 12,
-          background: "var(--bg-glass, rgba(0,0,0,0.75))",
-          backdropFilter: "blur(8px)",
-          padding: "0.5rem 0.75rem",
-          borderRadius: "var(--radius)",
-          fontSize: "0.75rem",
-          zIndex: 1000,
-          lineHeight: 1.6,
-          border: "1px solid var(--border)",
-        }}>
-          <div style={{ fontWeight: 600, marginBottom: 4, fontSize: "0.8rem" }}>NDVI</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ display: "inline-block", width: 14, height: 14, borderRadius: 3, background: "#22c55e" }} />
-            <span>&ge; 0.7</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ display: "inline-block", width: 14, height: 14, borderRadius: 3, background: "#86efac" }} />
-            <span>0.5 – 0.7</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ display: "inline-block", width: 14, height: 14, borderRadius: 3, background: "#facc15" }} />
-            <span>0.3 – 0.5</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ display: "inline-block", width: 14, height: 14, borderRadius: 3, background: "#ef4444" }} />
-            <span>&lt; 0.3</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

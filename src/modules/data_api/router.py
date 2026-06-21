@@ -169,6 +169,10 @@ class CultivoOut(S):
     admin_email: Optional[str] = None
     created_at: Optional[datetime] = None
 
+class CatalogoCultivoOut(S):
+    nombre_cultivo: str
+    variedad: str
+
 # ── Router setup ────────────────────────────────────
 
 router = APIRouter(prefix="/api", tags=["Data API"])
@@ -338,10 +342,97 @@ async def delete_campo(
         if c is None:
             from fastapi import HTTPException
             raise HTTPException(404, "Campo no encontrado")
+        parcelas = await db.execute(select(Parcela).where(Parcela.nombre_campo == nombre_campo))
+        for p in parcelas.scalars():
+            await db.delete(p)
         await db.delete(c)
 
 
 # ── Parcelas ────────────────────────────────────────
+
+@router.get("/campos/{nombre_campo}/parcelas", response_model=list[ParcelaOut])
+async def list_parcelas_por_campo(
+    nombre_campo: str,
+    user: UserContext = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    async with db.begin():
+        from sqlalchemy import select
+        result = await db.execute(
+            select(Parcela).where(Parcela.nombre_campo == nombre_campo).order_by(Parcela.nombre_parcela)
+        )
+        return list(result.scalars().all())
+
+
+@router.get("/campos/{nombre_campo}/parcelas/{nombre_parcela}", response_model=ParcelaOut)
+async def get_parcela_por_campo(
+    nombre_campo: str,
+    nombre_parcela: str,
+    user: UserContext = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    async with db.begin():
+        from sqlalchemy import select
+        result = await db.execute(
+            select(Parcela).where(
+                Parcela.nombre_parcela == nombre_parcela,
+                Parcela.nombre_campo == nombre_campo,
+            )
+        )
+        p = result.scalar_one_or_none()
+    if p is None:
+        from fastapi import HTTPException
+        raise HTTPException(404, "Parcela no encontrada")
+    return p
+
+
+@router.put("/campos/{nombre_campo}/parcelas/{nombre_parcela}", response_model=ParcelaOut)
+async def update_parcela_por_campo(
+    nombre_campo: str,
+    nombre_parcela: str,
+    body: ParcelaUpdate,
+    user: UserContext = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    async with db.begin():
+        from sqlalchemy import select
+        result = await db.execute(
+            select(Parcela).where(
+                Parcela.nombre_parcela == nombre_parcela,
+                Parcela.nombre_campo == nombre_campo,
+            )
+        )
+        p = result.scalar_one_or_none()
+        if p is None:
+            from fastapi import HTTPException
+            raise HTTPException(404, "Parcela no encontrada")
+        for k, v in body.model_dump(exclude_unset=True).items():
+            setattr(p, k, v)
+        await db.flush()
+        return p
+
+
+@router.delete("/campos/{nombre_campo}/parcelas/{nombre_parcela}", status_code=204)
+async def delete_parcela_por_campo(
+    nombre_campo: str,
+    nombre_parcela: str,
+    user: UserContext = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    async with db.begin():
+        from sqlalchemy import select
+        result = await db.execute(
+            select(Parcela).where(
+                Parcela.nombre_parcela == nombre_parcela,
+                Parcela.nombre_campo == nombre_campo,
+            )
+        )
+        p = result.scalar_one_or_none()
+        if p is None:
+            from fastapi import HTTPException
+            raise HTTPException(404, "Parcela no encontrada")
+        await db.delete(p)
+
 
 @router.get("/parcelas", response_model=list[ParcelaOut])
 async def list_parcelas(
@@ -593,6 +684,19 @@ async def delete_sensor(
 
 
 # ── Cultivos ────────────────────────────────────────
+
+@router.get("/cultivos/catalogo", response_model=list[CatalogoCultivoOut])
+async def list_catalogo_cultivos(
+    db: AsyncSession = Depends(get_db),
+):
+    async with db.begin():
+        from sqlalchemy import select
+        result = await db.execute(
+            select(Cultivo.nombre_cultivo, Cultivo.variedad)
+            .order_by(Cultivo.nombre_cultivo, Cultivo.variedad)
+        )
+        return [{"nombre_cultivo": r[0], "variedad": r[1]} for r in result.all()]
+
 
 @router.get("/cultivos", response_model=list[CultivoOut])
 async def list_cultivos(

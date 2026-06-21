@@ -49,7 +49,6 @@ export default function ParcelaDetallePage() {
         setCampo(c);
         setParcela(p);
         setSensores(s.filter((sen) => sen.nombreCampo === nombreCampo && sen.nombreParcela === nombreParcela));
-        setLecturas(l);
         if (p) {
           obtenerSatelital(p.coordenadasParcela)
             .then((data) => setNdviData({ [p.nombreParcela]: data.ndvi, [c?.nombreCampo ?? ""]: data.ndvi }))
@@ -119,7 +118,7 @@ export default function ParcelaDetallePage() {
       </div>
 
       <Card style={{ padding: "0.5rem", marginBottom: "1.5rem" }}>
-        {campo && <FieldsMap fields={[campo]} parcels={[parcela]} sensores={sensores} ndviData={ndviData} height={300} />}
+        {campo && <FieldsMap fields={[campo]} parcels={[parcela]} sensores={sensores} lecturas={lecturas} height={300} />}
       </Card>
       {ndviData[nombreParcela] !== undefined && (
         <Card style={{ marginBottom: "1.5rem" }}>

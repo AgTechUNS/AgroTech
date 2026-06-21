@@ -107,6 +107,8 @@ class LecturaOut(BaseModel):
     timestamp: datetime
     temperatura: float | None = None
     humedad: float | None = None
+    campoId: str = ""
+    parcelaId: str = ""
 
 
 class LecturasResponse(BaseModel):

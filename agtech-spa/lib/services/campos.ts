@@ -7,7 +7,15 @@ export async function listarCampos(
 ): Promise<PaginatedResponse<Campo>> {
   const res = await fetchWithAuth(`/api/campos?page=${page}&limit=${limit}`);
   if (!res.ok) throw new Error("Error al obtener campos");
-  return res.json();
+  const json = await res.json();
+  if (Array.isArray(json)) {
+    const start = (page - 1) * limit;
+    return {
+      data: json as Campo[],
+      pagination: { page, limit, total: json.length, totalPages: Math.max(1, Math.ceil(json.length / limit)) },
+    };
+  }
+  return json as PaginatedResponse<Campo>;
 }
 
 export async function obtenerCampo(nombreCampo: string): Promise<Campo> {

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { clearTokens } from "@/lib/auth";
 
 export default function LoginPage() {
   const { isLoading, error, login } = useAuth();
   const [emailUsuario, setEmailUsuario] = useState("");
+
+  useEffect(() => { clearTokens(); }, []);
   const [password, setPassword] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {

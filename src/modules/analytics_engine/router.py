@@ -314,6 +314,8 @@ async def consultar_lecturas(
                 timestamp=r.get("_time", ""),
                 temperatura=r.get("temperatura"),
                 humedad=r.get("humedad"),
+                campoId=r.get("campo_id", ""),
+                parcelaId=r.get("id_parcela", ""),
             )
             for r in lecturas
         ]

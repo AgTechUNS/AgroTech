@@ -56,6 +56,13 @@ async function tryRefresh(): Promise<string | null> {
   }
 }
 
+function forceLogout(): void {
+  clearTokens();
+  if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+    window.location.href = "/login";
+  }
+}
+
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   let token = getAccessToken();
   const headers: Record<string, string> = {
@@ -71,6 +78,8 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
     if (newToken) {
       headers["Authorization"] = `Bearer ${newToken}`;
       res = await fetch(url, { ...options, headers });
+    } else {
+      forceLogout();
     }
   }
   return res;

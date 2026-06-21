@@ -16,6 +16,8 @@ export function DrawControl({ onPolygonCreated }: DrawControlProps) {
 
   useEffect(() => {
     const fg = featureGroupRef.current;
+    map.addLayer(fg);
+
     const drawControl = new L.Control.Draw({
       draw: {
         polygon: { allowIntersection: false, showArea: true },
@@ -61,6 +63,7 @@ export function DrawControl({ onPolygonCreated }: DrawControlProps) {
       map.off(L.Draw.Event.EDITED as any, handleEdited as any);
       map.off(L.Draw.Event.DELETED as any, handleDeleted as any);
       map.removeControl(drawControl);
+      map.removeLayer(fg);
     };
   }, [map, onPolygonCreated]);
 

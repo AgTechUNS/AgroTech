@@ -31,7 +31,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { path:
 }
 
 async function proxyRequest(request: NextRequest, path: string[], method: string): Promise<NextResponse> {
-  const targetUrl = new URL(`${BACKEND_URL}/${path.join("/")}`);
+  const targetUrl = new URL(`${BACKEND_URL}/api/${path.join("/")}`);
   targetUrl.search = new URL(request.url).search;
 
   const headers: Record<string, string> = {};

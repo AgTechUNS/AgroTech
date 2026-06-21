@@ -5,6 +5,7 @@ export async function listarUsuarios(): Promise<Usuario[]> {
   const res = await fetchWithAuth("/api/usuarios");
   if (!res.ok) throw new Error("Error al obtener usuarios");
   const json = await res.json();
+  if (Array.isArray(json)) return json as Usuario[];
   return json.data as Usuario[];
 }
 

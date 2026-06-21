@@ -23,6 +23,7 @@ export async function listarReglas(): Promise<Regla[]> {
   const res = await fetchWithAuth("/api/reglas");
   if (!res.ok) throw new Error("Error al obtener reglas");
   const json = await res.json();
+  if (Array.isArray(json)) return json as Regla[];
   return json.data as Regla[];
 }
 

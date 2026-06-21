@@ -6,10 +6,10 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { listarCampos, eliminarCampo } from "@/lib/services/campos";
 import { listarParcelas, eliminarParcela } from "@/lib/services/parcelas";
-import { listarSensores } from "@/lib/services/sensores";
+import { listarSensores, listarLecturas } from "@/lib/services/sensores";
 import { listarReglas, editarRegla } from "@/lib/services/reglas";
 import { obtenerSatelital } from "@/lib/services/external";
-import { Campo, Parcela, Sensor, Regla } from "@/lib/types";
+import { Campo, Parcela, Sensor, Regla, Lectura } from "@/lib/types";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { puedeEditar, puedeCrearReglas } from "@/lib/auth/roles";
 import { Card, Table, Button, Spinner } from "@/components/ui";
@@ -27,6 +27,7 @@ export default function CampoDetallePage() {
   const [campo, setCampo] = useState<Campo | null>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [sensores, setSensores] = useState<Sensor[]>([]);
+  const [lecturas, setLecturas] = useState<Lectura[]>([]);
   const [todasReglas, setTodasReglas] = useState<Regla[]>([]);
   const [asignando, setAsignando] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,6 +58,17 @@ export default function CampoDetallePage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [nombreCampo]);
+
+  useEffect(() => {
+    const fetchAllLecturas = () => {
+      Promise.all(parcelas.map(p => listarLecturas(nombreCampo, p.nombreParcela)))
+        .then(results => setLecturas(results.flat()))
+        .catch(() => {});
+    };
+    if (parcelas.length > 0) fetchAllLecturas();
+    const interval = setInterval(fetchAllLecturas, 5000);
+    return () => clearInterval(interval);
+  }, [nombreCampo, parcelas]);
 
   if (loading) return <Spinner />;
 
@@ -109,7 +121,7 @@ export default function CampoDetallePage() {
       </div>
 
       <Card style={{ padding: "0.5rem", marginBottom: "1.5rem" }}>
-        <FieldsMap fields={[campo]} parcels={parcelas} sensores={sensores} ndviData={ndviData} height={400} />
+        <FieldsMap fields={[campo]} parcels={parcelas} sensores={sensores} lecturas={lecturas} height={400} />
       </Card>
       {ndviData[campo.nombreCampo] !== undefined && (
         <Card style={{ marginBottom: "1.5rem" }}>

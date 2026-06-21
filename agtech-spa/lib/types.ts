@@ -122,6 +122,8 @@ export interface Lectura {
   timestamp: string;
   temperatura: number | null;
   humedad: number | null;
+  campoId?: string;
+  parcelaId?: string;
 }
 
 export interface LoginResponse {

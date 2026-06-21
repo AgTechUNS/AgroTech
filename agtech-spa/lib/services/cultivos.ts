@@ -4,7 +4,15 @@ import { fetchWithAuth } from "@/lib/auth";
 export async function listarCultivos(page = 1, limit = 50): Promise<PaginatedResponse<Cultivo>> {
   const res = await fetchWithAuth(`/api/cultivos?page=${page}&limit=${limit}`);
   if (!res.ok) throw new Error("Error al obtener cultivos");
-  return res.json();
+  const json = await res.json();
+  if (Array.isArray(json)) {
+    const start = (page - 1) * limit;
+    return {
+      data: json as Cultivo[],
+      pagination: { page, limit, total: json.length, totalPages: Math.max(1, Math.ceil(json.length / limit)) },
+    };
+  }
+  return json as PaginatedResponse<Cultivo>;
 }
 
 export async function listarCatalogoCultivos(): Promise<CatalogoCultivo[]> {

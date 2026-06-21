@@ -5,6 +5,7 @@ export async function listarSensores(): Promise<Sensor[]> {
   const res = await fetchWithAuth("/api/sensores");
   if (!res.ok) throw new Error("Error al obtener sensores");
   const json = await res.json();
+  if (Array.isArray(json)) return json as Sensor[];
   return json.data as Sensor[];
 }
 
