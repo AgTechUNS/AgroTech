@@ -29,11 +29,11 @@ def set_socketio_instance(sio: Any) -> None:
     _sio = sio
 
 
-async def send_in_app(field_id: str, message: str) -> None:
-    """Emite una alerta in-app a todos los clientes conectados."""
+async def send_in_app(recipient_id: str, field_id: str, message: str) -> None:
+    """Emite una alerta in-app al usuario destinatario."""
     if _sio is None:
         raise RuntimeError(
             "Socket.IO no inicializado: llamar set_socketio_instance() "
             "en el bootstrap del monolito antes de notificar."
         )
-    await _sio.emit("alert", {"field_id": field_id, "message": message})
+    await _sio.emit("alert", {"recipient_id": recipient_id, "field_id": field_id, "message": message}, room=recipient_id)
