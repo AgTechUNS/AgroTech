@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth/token";
 import { proxyToBackend } from "@/lib/proxy";
 import { SatelitalData } from "@/lib/types";
+import { mockNdvi, mockHumedadSuelo } from "@/lib/utils/hash";
 
 const BACKEND_URL = process.env.BACKEND_URL;
 
@@ -39,9 +40,13 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const nombreParcela = searchParams.get("nombre_parcela") ?? "";
+  const nombreCampo = searchParams.get("nombre_campo") ?? "";
+  const seed = nombreParcela ? `${nombreParcela}:${nombreCampo}` : coordenadas;
+
   const data: SatelitalData = {
-    ndvi: Math.round((0.5 + Math.random() * 0.5) * 100) / 100,
-    humedad_suelo_estimada: Math.round((20 + Math.random() * 50) * 10) / 10,
+    ndvi: mockNdvi(seed),
+    humedad_suelo_estimada: mockHumedadSuelo(seed),
   };
 
   return NextResponse.json(data);

@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: { nombreCampo: string } }
 ) {
   const proxy = await proxyToBackend(request, `/api/campos/${params.nombreCampo}/parcelas`, "GET");
-  if (proxy) return proxy;
+  if (proxy && proxy.status < 400) return proxy;
   const user = getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });
@@ -28,8 +28,6 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { nombreCampo: string } }
 ) {
-  const proxy = await proxyToBackend(request, `/api/campos/${params.nombreCampo}/parcelas`, "POST");
-  if (proxy) return proxy;
   const user = requireAdmin(request);
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "Solo administradores" } }, { status: 403 });

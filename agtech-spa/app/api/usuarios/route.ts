@@ -8,7 +8,7 @@ const VALID_ROLES: UserRole[] = ["ADMIN", "AGRONOMO", "PRODUCTOR"];
 
 export async function GET(request: NextRequest) {
   const proxy = await proxyToBackend(request, "/api/usuarios", "GET");
-  if (proxy) return proxy;
+  if (proxy && proxy.status < 400) return proxy;
   const user = requireAdmin(request);
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "No autorizado" } }, { status: 403 });
@@ -19,8 +19,6 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const proxy = await proxyToBackend(request, "/api/usuarios", "POST");
-  if (proxy) return proxy;
   const user = requireAdmin(request);
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "Solo administradores" } }, { status: 403 });

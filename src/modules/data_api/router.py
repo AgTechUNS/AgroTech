@@ -715,6 +715,19 @@ async def create_cultivo(
     user: UserContext = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    from sqlalchemy import select
+    existing = await db.execute(
+        select(Cultivo).where(
+            Cultivo.nombre_cultivo == body.nombre_cultivo,
+            Cultivo.variedad == body.variedad,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=409,
+            detail=f"Ya existe el cultivo '{body.nombre_cultivo}' variedad '{body.variedad}'",
+        )
     async with db.begin():
         c = Cultivo(**body.model_dump(), admin_email=user.user_id)
         db.add(c)

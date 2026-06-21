@@ -5,7 +5,7 @@ import { proxyToBackend } from "@/lib/proxy";
 
 export async function GET(request: NextRequest) {
   const proxy = await proxyToBackend(request, "/api/cultivos/catalogo", "GET");
-  if (proxy) return proxy;
+  if (proxy && proxy.status < 400) return proxy;
   const user = getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });
