@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth/token";
+import { proxyToBackend } from "@/lib/proxy";
 import { SatelitalData } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
+  const proxy = await proxyToBackend(request, "/api/external/satelital", "GET");
+  if (proxy) return proxy;
   const user = getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });

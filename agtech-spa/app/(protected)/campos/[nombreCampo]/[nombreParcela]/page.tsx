@@ -41,16 +41,23 @@ export default function ParcelaDetallePage() {
         res.data.find((p) => p.nombreParcela === nombreParcela) ?? null
       ),
       listarSensores(),
-      listarLecturas(nombreCampo, nombreParcela),
     ])
-      .then(([c, p, s, l]) => {
+      .then(([c, p, s]) => {
         setCampo(c);
         setParcela(p);
         setSensores(s.filter((sen) => sen.nombreCampo === nombreCampo && sen.nombreParcela === nombreParcela));
-        setLecturas(l);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  }, [nombreCampo, nombreParcela]);
+
+  useEffect(() => {
+    const fetchLecturas = () => {
+      listarLecturas(nombreCampo, nombreParcela).then(setLecturas).catch(() => {});
+    };
+    fetchLecturas();
+    const interval = setInterval(fetchLecturas, 5000);
+    return () => clearInterval(interval);
   }, [nombreCampo, nombreParcela]);
 
   if (loading) return <Spinner />;
@@ -103,7 +110,7 @@ export default function ParcelaDetallePage() {
       </div>
 
       <Card style={{ padding: "0.5rem", marginBottom: "1.5rem" }}>
-        {campo && <FieldsMap fields={[campo]} parcels={[parcela]} sensores={sensores} height={300} />}
+        {campo && <FieldsMap fields={[campo]} parcels={[parcela]} sensores={sensores} lecturas={lecturas} height={300} />}
       </Card>
 
       <Card title={`Sensores (${activos.length} activos)`} style={{ marginBottom: "1.5rem" }}>

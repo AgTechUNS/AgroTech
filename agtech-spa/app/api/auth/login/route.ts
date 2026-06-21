@@ -1,6 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { findUsuario } from "@/lib/data/store";
 import { UserRole } from "@/lib/types";
+
+const BACKEND_URL = process.env.BACKEND_URL;
 
 function btoaSafe(s: string): string {
   return Buffer.from(s).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
@@ -27,7 +29,28 @@ function createToken(email: string, role: UserRole, nombre: string, adminEmail?:
   return { accessToken, refreshToken, tokenType: "Bearer", expiresIn: 86400 };
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  if (BACKEND_URL) {
+    try {
+      const body = await request.text();
+      const res = await fetch(`${BACKEND_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      const data = await res.text();
+      return new NextResponse(data, {
+        status: res.status,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch {
+      return NextResponse.json(
+        { error: { code: "PROXY_ERROR", message: `Error al conectar con backend en ${BACKEND_URL}` } },
+        { status: 502 }
+      );
+    }
+  }
+
   try {
     const { emailUsuario, password } = await request.json();
     if (!emailUsuario || !password) {

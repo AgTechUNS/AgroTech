@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readParcelas, updateParcela, deleteParcela } from "@/lib/data/store";
 import { getUserFromRequest, getAdminEmail, requireAdmin } from "@/lib/auth/token";
+import { proxyToBackend } from "@/lib/proxy";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { nombreCampo: string; nombreParcela: string } }
 ) {
+  const proxy = await proxyToBackend(request, `/api/campos/${params.nombreCampo}/parcelas/${params.nombreParcela}`, "GET");
+  if (proxy) return proxy;
   const user = getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });
@@ -26,6 +29,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { nombreCampo: string; nombreParcela: string } }
 ) {
+  const proxy = await proxyToBackend(request, `/api/campos/${params.nombreCampo}/parcelas/${params.nombreParcela}`, "PUT");
+  if (proxy) return proxy;
   const user = requireAdmin(request);
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "Solo administradores" } }, { status: 403 });
@@ -63,6 +68,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { nombreCampo: string; nombreParcela: string } }
 ) {
+  const proxy = await proxyToBackend(request, `/api/campos/${params.nombreCampo}/parcelas/${params.nombreParcela}`, "DELETE");
+  if (proxy) return proxy;
   const user = requireAdmin(request);
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "Solo administradores" } }, { status: 403 });

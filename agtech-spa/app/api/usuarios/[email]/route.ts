@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateUsuario, deleteUsuario, findUsuario } from "@/lib/data/store";
 import { getAdminEmail, requireAdmin } from "@/lib/auth/token";
+import { proxyToBackend } from "@/lib/proxy";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { email: string } }
 ) {
+  const proxy = await proxyToBackend(request, `/api/usuarios/${params.email}`, "PUT");
+  if (proxy) return proxy;
   const user = requireAdmin(request);
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "Solo administradores" } }, { status: 403 });
@@ -46,6 +49,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { email: string } }
 ) {
+  const proxy = await proxyToBackend(request, `/api/usuarios/${params.email}`, "DELETE");
+  if (proxy) return proxy;
   const user = requireAdmin(request);
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "Solo administradores" } }, { status: 403 });

@@ -12,6 +12,8 @@ from modules.analytics_engine.engine import (
 )
 from modules.analytics_engine.models import (
     AlertaRecomendacion,
+    LecturaOut,
+    LecturasResponse,
     Paginacion,
     Prediccion,
     PrediccionesResponse,
@@ -281,6 +283,40 @@ async def consultar_predicciones(
             total=len(data),
             totalPages=1,
         ),
+    )
+
+
+@router.get(
+    "/{nombreCampo}/parcelas/{nombreParcela}/lecturas",
+    response_model=LecturasResponse,
+)
+async def consultar_lecturas(
+    nombreCampo: str,
+    nombreParcela: str,
+    minutos: int = Query(60, ge=1, le=1440),
+    repo: TimeSeriesRepository | None = Depends(_obtener_repo),
+    user: UserContext = Depends(get_current_user),
+):
+    _verificar_repo(repo)
+    query = TelemetryQuery(
+        campos=[nombreCampo],
+        parcelas=[nombreParcela],
+        time_from=datetime.now(timezone.utc) - timedelta(minutes=minutos),
+        pivot=True,
+        order="desc",
+        limit=100,
+    )
+    lecturas = await repo.query(query)
+    return LecturasResponse(
+        data=[
+            LecturaOut(
+                sensorId=r.get("id_sensor", ""),
+                timestamp=r.get("_time", ""),
+                temperatura=r.get("temperatura"),
+                humedad=r.get("humedad"),
+            )
+            for r in lecturas
+        ]
     )
 
 

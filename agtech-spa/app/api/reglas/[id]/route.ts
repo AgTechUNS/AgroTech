@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRegla, updateRegla, deleteRegla } from "@/lib/data/store";
 import { getAdminEmail, requireRole } from "@/lib/auth/token";
+import { proxyToBackend } from "@/lib/proxy";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const proxy = await proxyToBackend(request, `/api/reglas/${params.id}`, "GET");
+  if (proxy) return proxy;
   const regla = getRegla(params.id);
   if (!regla) {
     return NextResponse.json({ error: { code: "NOT_FOUND", message: "Regla no encontrada" } }, { status: 404 });
@@ -17,6 +20,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const proxy = await proxyToBackend(request, `/api/reglas/${params.id}`, "PUT");
+  if (proxy) return proxy;
   const user = requireRole(request, ["ADMIN", "AGRONOMO"]);
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "No autorizado" } }, { status: 403 });
@@ -57,6 +62,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const proxy = await proxyToBackend(request, `/api/reglas/${params.id}`, "DELETE");
+  if (proxy) return proxy;
   const user = requireRole(request, ["ADMIN", "AGRONOMO"]);
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "No autorizado" } }, { status: 403 });

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Campo, Parcela, Sensor } from "@/lib/types";
+import { Campo, Parcela, Sensor, Lectura } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { TILE_LIGHT, TILE_DARK, TILE_ATTR } from "./tiles";
 
@@ -12,6 +12,7 @@ interface FieldsMapProps {
   fields?: Campo[];
   parcels?: Parcela[];
   sensores?: Sensor[];
+  lecturas?: Lectura[];
   height?: number;
 }
 
@@ -42,20 +43,30 @@ function FitBounds({ items, getCoords }: { items: unknown[]; getCoords: (item: u
 const FIELD_COLORS = ["#60a5fa", "#34d399", "#fbbf24", "#a78bfa", "#f87171", "#2dd4bf"];
 const PARCEL_COLORS = ["#f87171", "#fb923c", "#c084fc", "#2dd4bf", "#fbbf24"];
 
-export function FieldsMap({ fields, parcels, sensores, height = 400 }: FieldsMapProps) {
+export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400 }: FieldsMapProps) {
   const { theme } = useTheme();
   const hasData = (fields && fields.length > 0) || (parcels && parcels.length > 0);
   if (!hasData) return null;
-
-  const parcelsByCampo: Record<string, number> = {};
-  parcels?.forEach((p) => {
-    parcelsByCampo[p.nombreCampo] = (parcelsByCampo[p.nombreCampo] || 0) + 1;
-  });
 
   const sensoresByCampo: Record<string, number> = {};
   sensores?.forEach((s) => {
     sensoresByCampo[s.nombreCampo] = (sensoresByCampo[s.nombreCampo] || 0) + 1;
   });
+
+  const sensoresByParcela: Record<string, Sensor[]> = {};
+  sensores?.forEach((s) => {
+    if (!sensoresByParcela[s.nombreParcela]) sensoresByParcela[s.nombreParcela] = [];
+    sensoresByParcela[s.nombreParcela].push(s);
+  });
+
+  const lastLecturaBySensor: Record<string, Lectura> = {};
+  if (lecturas) {
+    for (const l of lecturas) {
+      if (!lastLecturaBySensor[l.sensorId] || new Date(l.timestamp) > new Date(lastLecturaBySensor[l.sensorId].timestamp)) {
+        lastLecturaBySensor[l.sensorId] = l;
+      }
+    }
+  }
 
   const allItems: { geo: unknown; style: L.PathOptions; tooltip: string }[] = [];
   const allCoords: { geoStr: string }[] = [];
@@ -64,11 +75,11 @@ export function FieldsMap({ fields, parcels, sensores, height = 400 }: FieldsMap
     fields.forEach((f, i) => {
       try {
         const geo = JSON.parse(f.coordenadasCampo);
-        const parcelCount = parcelsByCampo[f.nombreCampo];
-        const sensorCount = sensoresByCampo[f.nombreCampo];
+        const parcelCount = parcels?.filter((p) => p.nombreCampo === f.nombreCampo).length ?? 0;
+        const sensorCount = sensoresByCampo[f.nombreCampo] ?? 0;
         let tooltip = `<b>${f.nombreCampo}</b>`;
         if (f.descripcionCampo) tooltip += `<br/>${f.descripcionCampo}`;
-        tooltip += `<br/><span style="font-size:0.85rem;color:#94a3b8;">Parcelas: ${parcelCount ?? "—"} | Sensores: ${sensorCount ?? "—"}</span>`;
+        tooltip += `<br/><span style="font-size:0.85rem;color:#94a3b8;">Parcelas: ${parcelCount} | Sensores: ${sensorCount}</span>`;
         allItems.push({
           geo,
           style: { color: FIELD_COLORS[i % FIELD_COLORS.length], weight: 2, fillOpacity: 0.12 },
@@ -83,9 +94,25 @@ export function FieldsMap({ fields, parcels, sensores, height = 400 }: FieldsMap
     parcels.forEach((p, i) => {
       try {
         const geo = JSON.parse(p.coordenadasParcela);
+        const parcelaSensores = sensoresByParcela[p.nombreParcela] ?? [];
+        const activos = parcelaSensores.filter((s) => s.activo);
         let tooltip = `<b>${p.nombreParcela}</b>`;
         if (p.nombreCultivo) tooltip += `<br/>${p.nombreCultivo}${p.variedad ? ` — ${p.variedad}` : ""}`;
         if (p.descripcionParcela) tooltip += `<br/><span style="font-size:0.85rem;color:#94a3b8;">${p.descripcionParcela}</span>`;
+        if (activos.length > 0) {
+          tooltip += `<br/><hr style="border-color:rgba(255,255,255,0.1);margin:4px 0;"/>`;
+          for (const s of activos) {
+            const ultima = lastLecturaBySensor[s.deviceId];
+            tooltip += `<div style="font-size:0.85rem;margin:2px 0;">`;
+            tooltip += `🛰️ <b>${s.deviceId}</b>`;
+            if (ultima) {
+              tooltip += ` — ${ultima.temperatura != null ? `${ultima.temperatura.toFixed(1)}°C` : "—"} / ${ultima.humedad != null ? `${ultima.humedad.toFixed(1)}%` : "—"}`;
+            } else {
+              tooltip += ` — <span style="color:#94a3b8;">sin datos</span>`;
+            }
+            tooltip += `</div>`;
+          }
+        }
         allItems.push({
           geo,
           style: { color: PARCEL_COLORS[i % PARCEL_COLORS.length], weight: 3, fillOpacity: 0.2 },

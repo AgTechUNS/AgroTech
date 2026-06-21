@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readUsuarios, addUsuario, findUsuario } from "@/lib/data/store";
 import { getAdminEmail, requireAdmin } from "@/lib/auth/token";
+import { proxyToBackend } from "@/lib/proxy";
 import { UserRole } from "@/lib/types";
 
 const VALID_ROLES: UserRole[] = ["ADMIN", "AGRONOMO", "PRODUCTOR"];
 
 export async function GET(request: NextRequest) {
+  const proxy = await proxyToBackend(request, "/api/usuarios", "GET");
+  if (proxy) return proxy;
   const user = requireAdmin(request);
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "No autorizado" } }, { status: 403 });
@@ -16,6 +19,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const proxy = await proxyToBackend(request, "/api/usuarios", "POST");
+  if (proxy) return proxy;
   const user = requireAdmin(request);
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "Solo administradores" } }, { status: 403 });

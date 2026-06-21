@@ -100,3 +100,14 @@ class ReglaUpdateRequest(BaseModel):
     operador: str | None = None
     valor: float | None = None
     descripcion: str | None = None
+
+
+class LecturaOut(BaseModel):
+    sensorId: str
+    timestamp: datetime
+    temperatura: float | None = None
+    humedad: float | None = None
+
+
+class LecturasResponse(BaseModel):
+    data: list[LecturaOut]

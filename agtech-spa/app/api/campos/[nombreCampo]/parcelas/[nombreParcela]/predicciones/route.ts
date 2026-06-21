@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth/token";
+import { proxyToBackend } from "@/lib/proxy";
 import { Prediccion } from "@/lib/types";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { nombreCampo: string; nombreParcela: string } }
 ) {
-  const user = getUserFromRequest(_request);
+  const proxy = await proxyToBackend(request, `/api/campos/${params.nombreCampo}/parcelas/${params.nombreParcela}/predicciones`, "GET");
+  if (proxy) return proxy;
+  const user = getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });
   }
