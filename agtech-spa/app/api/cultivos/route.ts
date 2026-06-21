@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readCultivos, addCultivo } from "@/lib/data/store";
 import { getUserFromRequest, getAdminEmail, requireAdmin } from "@/lib/auth/token";
+import { proxyToBackend } from "@/lib/proxy";
 
 export async function GET(request: NextRequest) {
+  const proxy = await proxyToBackend(request, "/api/cultivos", "GET");
+  if (proxy) return proxy;
   const user = getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });
@@ -24,6 +27,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const proxy = await proxyToBackend(request, "/api/cultivos", "POST");
+  if (proxy) return proxy;
   const user = requireAdmin(request);
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "Solo administradores" } }, { status: 403 });

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { JwtPayload } from "@/lib/types";
+import { JwtPayload, UserRole } from "@/lib/types";
 
 function b64UrlDecode(str: string): string {
   return Buffer.from(str.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString();
@@ -21,8 +21,12 @@ export function getAdminEmail(user: JwtPayload): string {
   return user.adminEmail ?? user.email;
 }
 
-export function requireAdmin(request: NextRequest): JwtPayload | null {
+export function requireRole(request: NextRequest, roles: UserRole[]): JwtPayload | null {
   const user = getUserFromRequest(request);
-  if (!user || user.role !== "ADMIN") return null;
+  if (!user || !roles.includes(user.role)) return null;
   return user;
+}
+
+export function requireAdmin(request: NextRequest): JwtPayload | null {
+  return requireRole(request, ["ADMIN"]);
 }

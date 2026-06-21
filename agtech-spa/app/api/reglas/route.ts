@@ -1,48 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readReglas, addRegla } from "@/lib/data/store";
-import { getUserFromRequest, getAdminEmail, requireAdmin } from "@/lib/auth/token";
+import { getUserFromRequest, getAdminEmail, requireRole } from "@/lib/auth/token";
+import { proxyToBackend } from "@/lib/proxy";
+import crypto from "crypto";
 
 export async function GET(request: NextRequest) {
+  const proxy = await proxyToBackend(request, "/api/reglas", "GET");
+  if (proxy) return proxy;
   const user = getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });
   }
   const adminEmail = getAdminEmail(user);
-
-  const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get("page") ?? "1", 10);
-  const limit = parseInt(searchParams.get("limit") ?? "50", 10);
   const reglas = readReglas(adminEmail);
-  const total = reglas.length;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const start = (page - 1) * limit;
-
-  return NextResponse.json({
-    data: reglas.slice(start, start + limit),
-    pagination: { page, limit, total, totalPages },
-  });
+  return NextResponse.json({ data: reglas });
 }
 
 export async function POST(request: NextRequest) {
-  const user = requireAdmin(request);
+  const proxy = await proxyToBackend(request, "/api/reglas", "POST");
+  if (proxy) return proxy;
+  const user = requireRole(request, ["ADMIN", "AGRONOMO"]);
   if (!user) {
-    return NextResponse.json({ error: { code: "FORBIDDEN", message: "Solo administradores" } }, { status: 403 });
+    return NextResponse.json({ error: { code: "FORBIDDEN", message: "No autorizado" } }, { status: 403 });
   }
   const adminEmail = getAdminEmail(user);
 
   try {
     const body = await request.json();
-    const { metrica, operador, valor } = body;
+    const { nombre, descripcion, metrica, operador, valor, camposAsignados } = body;
 
-    if (!metrica || !operador || valor == null) {
+    if (!nombre || !metrica || !operador || valor == null) {
       return NextResponse.json(
-        { error: { code: "VALIDATION_ERROR", message: "metrica, operador y valor son obligatorios" } },
+        { error: { code: "VALIDATION_ERROR", message: "nombre, metrica, operador y valor son obligatorios" } },
         { status: 400 }
       );
     }
 
-    addRegla({ metrica, operador, valor, adminEmail });
-    return NextResponse.json({ message: "Regla creada exitosamente" }, { status: 201 });
+    const id = crypto.randomUUID();
+    addRegla({ id, nombre, descripcion, metrica, operador, valor, adminEmail, camposAsignados: camposAsignados ?? [] });
+    return NextResponse.json({ message: "Regla creada exitosamente", id }, { status: 201 });
   } catch {
     return NextResponse.json(
       { error: { code: "UNKNOWN_ERROR", message: "Error al procesar la solicitud" } },

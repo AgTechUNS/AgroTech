@@ -1,15 +1,10 @@
-interface LoginResponse {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: string;
-  expiresIn: number;
-}
+import { LoginResponse } from "@/lib/types";
 
-export async function loginApi(email: string, password: string): Promise<LoginResponse> {
+export async function loginApi(emailUsuario: string, password: string): Promise<LoginResponse> {
   const res = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ emailUsuario, password }),
   });
   if (!res.ok) {
     const body = await res.json().catch(() => null);

@@ -6,6 +6,7 @@ earthengine-api>=1.0.0,<2
 python-dotenv>=1.0.0,<2
 paho-mqtt>=2.0.0,<3
 influxdb-client>=1.40.0,<2
+aiocsv>=1.4.0,<2          # Async CSV parser (InfluxDB async Query)
 redis>=4.2.0
 sendgrid>=6.10.0,<7
 twilio>=8.0.0,<9
@@ -14,6 +15,7 @@ sqlalchemy[asyncio]>=2.0,<3       # ORM relacional (Auth + RelationalRepository)
 aiosqlite>=0.20.0,<1              # Driver SQLite async (solo desarrollo local, reemplazar por asyncpg en prod)
 asyncpg>=0.29.0,<1                # Driver PostgreSQL async (producción)
 passlib[bcrypt]>=1.7,<2           # Hashing de contraseñas con bcrypt
+bcrypt==4.0.1                     # Pin compatible con passlib (5.x rompe __about__)
 python-jose[cryptography]>=3.0,<4 # Firma y verificación de JWT (HS256/RS256)
 slowapi>=0.1.9,<1                 # Rate limiting por IP sobre FastAPI
 pydantic-settings>=2.0,<3         # Carga de configuración desde .env con tipado

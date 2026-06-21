@@ -6,6 +6,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import { DrawControl } from "./DrawControl";
+import { useTheme } from "@/contexts/ThemeContext";
+import { TILE_LIGHT, TILE_DARK, TILE_ATTR } from "./tiles";
 
 export interface ExistingPolygon {
   geojson: string;
@@ -35,9 +37,9 @@ function ExistingPolygonsLayer({ polygons }: { polygons: ExistingPolygon[] }) {
         const geo = JSON.parse(p.geojson);
         const leafletPoly = L.geoJSON(geo, {
           style: {
-            color: p.color ?? "#3388ff",
+            color: p.color ?? "#60a5fa",
             weight: p.weight ?? 2,
-            fillOpacity: p.fillOpacity ?? 0.1,
+            fillOpacity: p.fillOpacity ?? 0.12,
           },
         });
         leafletPoly.bindTooltip(p.label, { permanent: false, direction: "center", sticky: true });
@@ -63,13 +65,14 @@ function ExistingPolygonsLayer({ polygons }: { polygons: ExistingPolygon[] }) {
 }
 
 export function MapSelector({ onPolygonChange, height = 400, existingPolygons = [] }: MapSelectorProps) {
+  const { theme } = useTheme();
   const handlePolygonCreated = useCallback(
     (geojson: string) => onPolygonChange(geojson),
     [onPolygonChange]
   );
 
   return (
-    <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid #e2e8f0" }}>
+    <div style={{ borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid var(--border)" }}>
       <MapContainer
         center={[-38.0, -62.5]}
         zoom={6}
@@ -77,8 +80,8 @@ export function MapSelector({ onPolygonChange, height = 400, existingPolygons = 
         scrollWheelZoom={true}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution={TILE_ATTR}
+          url={theme === "dark" ? TILE_DARK : TILE_LIGHT}
         />
         <ExistingPolygonsLayer polygons={existingPolygons} />
         <DrawControl onPolygonCreated={handlePolygonCreated} />

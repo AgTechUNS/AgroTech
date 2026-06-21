@@ -1,3 +1,4 @@
+import asyncio
 import os
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
@@ -7,7 +8,7 @@ import logging
 
 from modules.iot_ingestion.query_models import TelemetryQuery
 
-load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "tools", "simulador_sensores", "credenciales.env"))
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".env"))
 logging.getLogger("influxdb_client").setLevel(logging.ERROR)
 
 
@@ -38,6 +39,7 @@ class TimeSeriesRepository:
         return self
 
     async def guardar_telemetria(self, lectura):
+        print("NUEVA_GUARDAR_TELEMETRIA_2026")
         try:
             if not self.client:
                 print(f"Cliente de InfluxDB no inicializado")
@@ -56,6 +58,7 @@ class TimeSeriesRepository:
             print(f"Dato guardado para campo {lectura.campo_id} | parcela {lectura.parcela_id} | Sensor: {lectura.sensor_id}")
         except Exception as e:
             print(f"Error al guardar en InfluxDB: {e}")
+            raise
 
     # ──────────────────────────────────────────────
     # Consultas públicas
@@ -150,6 +153,7 @@ class TimeSeriesRepository:
         if self.client:
             try:
                 await self.client.close()
+                self.client = None
                 print(f"[TimeSeriesRepository] Conexión cerrada")
             except Exception as e:
                 print(f"Error al cerrar conexión: {e}")

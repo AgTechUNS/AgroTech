@@ -67,7 +67,7 @@ export default function CrearCultivoPage() {
       <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>
         Nuevo cultivo
       </h1>
-      <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>
+      <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
         Seleccioná un cultivo del catálogo y su variedad
       </p>
 
@@ -80,10 +80,10 @@ export default function CrearCultivoPage() {
               onChange={(e) => handleCropChange(e.target.value)}
               style={{
                 padding: "0.5rem 0.75rem",
-                borderRadius: "6px",
-                border: "1px solid #ccc",
+                borderRadius: "var(--radius)",
+                border: "1px solid var(--border)",
                 fontSize: "1rem",
-                background: "#fff",
+                background: "var(--bg-input)",
               }}
               required
             >
@@ -104,10 +104,10 @@ export default function CrearCultivoPage() {
               disabled={!selectedCrop}
               style={{
                 padding: "0.5rem 0.75rem",
-                borderRadius: "6px",
-                border: "1px solid #ccc",
+                borderRadius: "var(--radius)",
+                border: "1px solid var(--border)",
                 fontSize: "1rem",
-                background: !selectedCrop ? "#f5f5f5" : "#fff",
+                background: !selectedCrop ? "var(--bg-glass)" : "var(--bg-input)",
               }}
               required
             >
@@ -121,7 +121,7 @@ export default function CrearCultivoPage() {
           </label>
 
           {error && (
-            <div style={{ color: "#e74c3c", fontSize: "0.9rem", background: "#fdecea", padding: "0.6rem", borderRadius: "6px" }}>
+            <div style={{ color: "var(--danger)", fontSize: "0.9rem", background: "var(--danger-bg)", padding: "0.6rem", borderRadius: "var(--radius)" }}>
               {error}
             </div>
           )}

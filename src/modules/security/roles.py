@@ -1,0 +1,143 @@
+﻿"""
+roles.py ÔÇö L├│gica RBAC y control de acceso a nivel de recurso.
+
+Responsabilidades:
+  - RoleEnum         : fuente de verdad de roles (importado desde core/enums).
+  - require_role()   : dependencia inyectable que verifica el rol m├¡nimo.
+  - verify_field_access() : verifica que el usuario tenga acceso al campo solicitado.
+
+Separaci├│n de intereses:
+  Toda regla de permisos vive ac├í. Si ma├▒ana se agrega un nuevo rol
+  o cambian las pol├¡ticas, el cambio es en un solo archivo.
+
+Flujo de autorizaci├│n:
+  get_current_user() ÔåÆ UserContext ÔåÆ require_role() ÔåÆ verify_field_access()
+"""
+
+import logging
+from typing import Callable
+
+from fastapi import Depends
+
+from modules.security.core.enums import RoleEnum
+from modules.security.core.exceptions import InsufficientPermissionsException, ResourceOwnershipException
+from modules.security.schemas import UserContext
+from modules.security.get_current_user import get_current_user
+
+logger = logging.getLogger(__name__)
+
+
+# ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+# Re-exportar RoleEnum desde core/enums
+# ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+# Los consumidores de security/ importan RoleEnum desde ac├í,
+# sin necesidad de conocer que vive en core/.
+__all__ = ["RoleEnum", "require_role", "verify_field_access"]
+
+
+# ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+# Jerarqu├¡a de roles
+# ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+# Orden de privilegios: ├¡ndice mayor = m├ís permisos.
+# ADMINISTRADOR puede hacer todo lo que AGRONOMO puede, m├ís lo propio.
+_ROLE_HIERARCHY: dict[RoleEnum, int] = {
+    RoleEnum.AGRONOMO:      1,
+    RoleEnum.ADMINISTRADOR: 2,
+}
+
+
+def _has_minimum_role(user_role: RoleEnum, required_role: RoleEnum) -> bool:
+    """Retorna True si user_role tiene al menos el nivel de required_role."""
+    return _ROLE_HIERARCHY.get(user_role, 0) >= _ROLE_HIERARCHY.get(required_role, 0)
+
+
+# ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+# require_role ÔÇö dependencia inyectable de rol
+# ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+def require_role(minimum_role: RoleEnum) -> Callable:
+    """
+    Factory que retorna una dependencia FastAPI que exige un rol m├¡nimo.
+
+    Uso en endpoints del API Controller:
+
+        @router.get("/reglas-agroclimaticas")
+        async def listar_reglas(
+            user: UserContext = Depends(require_role(RoleEnum.ADMINISTRADOR))
+        ):
+            ...
+
+        @router.get("/parcelas")
+        async def listar_parcelas(
+            user: UserContext = Depends(require_role(RoleEnum.AGRONOMO))
+        ):
+            ...
+
+    Par├ímetros
+    ----------
+    minimum_role : rol m├¡nimo requerido para acceder al endpoint.
+
+    Retorna
+    -------
+    El UserContext si el rol es suficiente.
+
+    Lanza
+    -----
+    InsufficientPermissionsException (403) si el rol no alcanza.
+    """
+
+    async def _check_role(
+        user: UserContext = Depends(get_current_user),
+    ) -> UserContext:
+        if not _has_minimum_role(user.role, minimum_role):
+            logger.warning(
+                "Evento de seguridad | tipo=INSUFFICIENT_PERMISSIONS | user=%s | detalle=%s",
+                user.user_id,
+                f"rol_actual={user.role.value} rol_requerido={minimum_role.value}",
+            )
+            raise InsufficientPermissionsException(required_role=minimum_role.value)
+
+        return user
+
+    _check_role.__name__ = f"require_{minimum_role.value}_role"
+    return _check_role
+
+
+# ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+# verify_field_access ÔÇö control a nivel de recurso
+# ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+def verify_field_access(user: UserContext, campo_id: str) -> None:
+    """
+    Verifica que el usuario tenga acceso al campo solicitado.
+
+    ADMINISTRADOR: acceso total, sin restricciones.
+    AGRONOMO: solo puede operar sobre los campos en su assigned_fields.
+
+    Uso en auth/service.py o en endpoints del API Controller:
+
+        verify_field_access(user, campo_id)
+        # si no tiene acceso, lanza ResourceOwnershipException (403)
+
+    Par├ímetros
+    ----------
+    user     : contexto del usuario autenticado (viene de get_current_user).
+    campo_id : ID del campo que se intenta consultar o modificar.
+
+    Lanza
+    -----
+    ResourceOwnershipException (403) si el agr├│nomo no tiene asignado el campo.
+    """
+    if user.role == RoleEnum.ADMINISTRADOR:
+        return  # acceso total
+
+    if campo_id not in user.assigned_fields:
+        logger.warning(
+            "Evento de seguridad | tipo=RESOURCE_OWNERSHIP_DENIED | user=%s | detalle=%s",
+            user.user_id,
+            f"campo_id={campo_id}",
+        )
+        raise ResourceOwnershipException(
+            details=f"No ten├®s acceso al campo '{campo_id}'."
+        )

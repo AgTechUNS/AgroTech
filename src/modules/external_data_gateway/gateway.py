@@ -40,6 +40,16 @@ def _resolve_gee_credentials() -> str:
     return default
 
 
+def _extract_project_id(creds_path: str) -> str | None:
+    """Intenta leer project_id del JSON de la service account."""
+    try:
+        with open(creds_path) as f:
+            data = json.load(f)
+        return data.get("project_id")
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
 def _ensure_ee():
     global _ee_initialized
     if _ee_initialized:
@@ -48,9 +58,24 @@ def _ensure_ee():
         if _ee_initialized:
             return
         creds_path = _resolve_gee_credentials()
-        credentials = ee.ServiceAccountCredentials(None, creds_path)
-        ee.Initialize(credentials, project=GEE_PROJECT_ID)
-        _ee_initialized = True
+        if not os.path.exists(creds_path):
+            raise FileNotFoundError(
+                f"Archivo de credenciales GEE no encontrado: {creds_path}"
+            )
+        try:
+            credentials = ee.ServiceAccountCredentials(None, creds_path)
+            project_id = GEE_PROJECT_ID or _extract_project_id(creds_path)
+            ee.Initialize(credentials, project=project_id)
+            _ee_initialized = True
+        except Exception as e:
+            print(f"[GEE] Error al inicializar Earth Engine: {e}")
+            raise
+        finally:
+            if GEE_CREDENTIALS_JSON:
+                try:
+                    os.remove(creds_path)
+                except OSError:
+                    pass
 
 
 async def fetch_weather(latitude: float, longitude: float) -> WeatherResponse:
@@ -82,7 +107,10 @@ async def fetch_satellite_indices(
     latitude: float,
     longitude: float,
 ) -> SatelliteResponse:
-    await asyncio.to_thread(_ensure_ee)
+    try:
+        await asyncio.to_thread(_ensure_ee)
+    except (FileNotFoundError, OSError) as e:
+        raise ValueError(f"Capa satelital no disponible: {e}")
 
     point = ee.Geometry.Point([longitude, latitude])
 
@@ -120,11 +148,7 @@ async def fetch_satellite_indices(
     result = await asyncio.to_thread(_compute)
 
     if result is None:
-        from fastapi import HTTPException
-        raise HTTPException(
-            status_code=404,
-            detail="Capa satelital no disponible temporalmente",
-        )
+        raise ValueError("Capa satelital no disponible temporalmente")
 
     ndvi_value, ndmi_value, epoch_ms = result
 

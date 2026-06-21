@@ -3,24 +3,26 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { crearRegla } from "@/lib/services/reglas";
+import { listarCampos } from "@/lib/services/campos";
+import { Campo } from "@/lib/types";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { puedeEditar } from "@/lib/auth/roles";
-import { Card, Button, Input } from "@/components/ui";
+import { puedeCrearReglas } from "@/lib/auth/roles";
+import { Card, Button } from "@/components/ui";
 
 const METRICAS = [
-  { value: "temperatura", label: "Temperatura (°C)" },
-  { value: "humedad_suelo", label: "Humedad del suelo (%)" },
-  { value: "precipitacion", label: "Precipitación (mm)" },
-  { value: "viento", label: "Viento (km/h)" },
+  { value: "temperatura", label: "Temperatura" },
+  { value: "humedad_suelo", label: "Humedad del suelo" },
+  { value: "precipitacion", label: "Precipitación" },
+  { value: "viento", label: "Viento" },
   { value: "ndvi", label: "NDVI" },
 ];
 
 const OPERADORES = [
-  { value: ">=", label: "Mayor o igual (≥)" },
-  { value: "<=", label: "Menor o igual (≤)" },
-  { value: ">", label: "Mayor (>)" },
-  { value: "<", label: "Menor (<)" },
-  { value: "==", label: "Igual (=)" },
+  { value: ">=", label: "≥ Mayor o igual" },
+  { value: "<=", label: "≤ Menor o igual" },
+  { value: ">", label: "> Mayor" },
+  { value: "<", label: "< Menor" },
+  { value: "==", label: "= Igual" },
 ];
 
 export default function CrearReglaPage() {
@@ -28,26 +30,49 @@ export default function CrearReglaPage() {
   const { user } = useAuthContext();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nombre, setNombre] = useState("");
+  const [descripcion, setDescripcion] = useState("");
   const [metrica, setMetrica] = useState(METRICAS[0].value);
   const [operador, setOperador] = useState(OPERADORES[0].value);
   const [valorStr, setValorStr] = useState("");
+  const [campos, setCampos] = useState<Campo[]>([]);
+  const [camposSeleccionados, setCamposSeleccionados] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!puedeEditar(user)) router.push("/dashboard");
+    if (!puedeCrearReglas(user)) router.push("/dashboard");
   }, [user, router]);
+
+  useEffect(() => {
+    listarCampos(1, 100).then((r) => setCampos(r.data)).catch(() => {});
+  }, []);
+
+  function toggleCampo(nombreCampo: string) {
+    setCamposSeleccionados((prev) =>
+      prev.includes(nombreCampo)
+        ? prev.filter((c) => c !== nombreCampo)
+        : [...prev, nombreCampo]
+    );
+  }
+
+  if (!puedeCrearReglas(user)) return null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const valor = parseFloat(valorStr);
-    if (isNaN(valor)) {
-      setError("El valor umbral debe ser un número.");
-      return;
-    }
+    if (!nombre.trim()) { setError("El nombre es obligatorio."); return; }
+    if (isNaN(valor)) { setError("El valor debe ser un número."); return; }
 
     setSubmitting(true);
     setError(null);
     try {
-      await crearRegla({ metrica, operador, valor });
+      await crearRegla({
+        nombre: nombre.trim(),
+        descripcion: descripcion.trim() || undefined,
+        metrica,
+        operador,
+        valor,
+        camposAsignados: camposSeleccionados,
+      });
       router.push("/reglas");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear la regla.");
@@ -56,80 +81,83 @@ export default function CrearReglaPage() {
     }
   }
 
-  if (!puedeEditar(user)) return null;
-
   return (
     <div>
-      <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>
-        Nueva regla agroclimática
-      </h1>
-      <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>
-        Definí un umbral de evaluación para el pipeline de alertas
-      </p>
+      <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>Nueva regla agroclimática</h1>
+      <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>Definí un umbral global y asígnalo a los campos</p>
 
       <Card>
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.2rem", maxWidth: 500 }}>
+          <div>
+            <span style={{ fontSize: "0.85rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>Nombre *</span>
+            <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} required
+              placeholder="Ej: Alerta de helada"
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: "1rem", boxSizing: "border-box", background: "var(--bg-input)", color: "var(--text-primary)" }} />
+          </div>
+
+          <div>
+            <span style={{ fontSize: "0.85rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>Descripción</span>
+            <input type="text" value={descripcion} onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Ej: Detecta temperaturas peligrosamente bajas"
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: "1rem", boxSizing: "border-box", background: "var(--bg-input)", color: "var(--text-primary)" }} />
+          </div>
+
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Métrica</span>
-            <select
-              value={metrica}
-              onChange={(e) => setMetrica(e.target.value)}
-              style={{
-                padding: "0.5rem 0.75rem",
-                borderRadius: "6px",
-                border: "1px solid #ccc",
-                fontSize: "1rem",
-                background: "#fff",
-              }}
-            >
-              {METRICAS.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
+            <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Métrica *</span>
+            <select value={metrica} onChange={(e) => setMetrica(e.target.value)}
+              style={{ padding: "0.5rem 0.75rem", borderRadius: "var(--radius)", border: "1px solid var(--border)", fontSize: "1rem", background: "var(--bg-input)", color: "var(--text-primary)" }}>
+              {METRICAS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
           </label>
 
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Operador</span>
-            <select
-              value={operador}
-              onChange={(e) => setOperador(e.target.value)}
-              style={{
-                padding: "0.5rem 0.75rem",
-                borderRadius: "6px",
-                border: "1px solid #ccc",
-                fontSize: "1rem",
-                background: "#fff",
-              }}
-            >
-              {OPERADORES.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
+            <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Operador *</span>
+            <select value={operador} onChange={(e) => setOperador(e.target.value)}
+              style={{ padding: "0.5rem 0.75rem", borderRadius: "var(--radius)", border: "1px solid var(--border)", fontSize: "1rem", background: "var(--bg-input)", color: "var(--text-primary)" }}>
+              {OPERADORES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </label>
 
-          <Input
-            label="Valor umbral"
-            type="number"
-            step="0.1"
-            placeholder="Ej: 38.0"
-            value={valorStr}
-            onChange={(e) => setValorStr(e.target.value)}
-            required
-          />
+          <div>
+            <span style={{ fontSize: "0.85rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>Valor umbral *</span>
+            <input type="number" step="0.1" value={valorStr} onChange={(e) => setValorStr(e.target.value)} required
+              placeholder="Ej: 2.0"
+              style={{ width: "100%", padding: "0.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: "1rem", boxSizing: "border-box", background: "var(--bg-input)", color: "var(--text-primary)" }} />
+          </div>
+
+          {campos.length > 0 && (
+            <div>
+              <span style={{ fontSize: "0.85rem", fontWeight: 600, display: "block", marginBottom: "0.4rem" }}>Asignar a campos</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                {campos.map((c) => {
+                  const selected = camposSeleccionados.includes(c.nombreCampo);
+                  return (
+                    <label key={c.nombreCampo}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "0.3rem",
+                        padding: "0.3rem 0.6rem", borderRadius: "6px",
+                        background: selected ? "var(--accent-bg)" : "var(--bg-glass)",
+                        border: selected ? "1px solid var(--accent)" : "1px solid var(--border)",
+                        cursor: "pointer", fontSize: "0.85rem",
+                      }}>
+                      <input type="checkbox" checked={selected} onChange={() => toggleCampo(c.nombreCampo)} />
+                      {c.nombreCampo}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {error && (
-            <div style={{ color: "#e74c3c", fontSize: "0.9rem", background: "#fdecea", padding: "0.6rem", borderRadius: "6px" }}>
+            <div style={{ color: "var(--danger)", fontSize: "0.9rem", background: "var(--danger-bg)", padding: "0.6rem", borderRadius: "var(--radius)" }}>
               {error}
             </div>
           )}
 
           <div style={{ display: "flex", gap: "0.8rem" }}>
-            <Button type="submit" loading={submitting}>
-              Guardar regla
-            </Button>
-            <Button variant="ghost" onClick={() => router.push("/reglas")}>
-              Cancelar
-            </Button>
+            <Button type="submit" loading={submitting}>Guardar regla</Button>
+            <Button variant="ghost" onClick={() => router.push("/reglas")}>Cancelar</Button>
           </div>
         </form>
       </Card>

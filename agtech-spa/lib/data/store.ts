@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
-import { Campo, Cultivo, Parcela, Regla, Sensor, Gateway, Agricultor, CatalogoCultivo } from "@/lib/types";
+import { Campo, Cultivo, Parcela, Regla, Sensor, Gateway, Usuario, CatalogoCultivo } from "@/lib/types";
 import { CATALOGO_CULTIVOS } from "./catalogo";
-import { SEED_CAMPOS, SEED_PARCELAS, SEED_REGLAS, SEED_SENSORES, SEED_AGRICULTORES } from "./seed";
+import { SEED_CAMPOS, SEED_PARCELAS, SEED_REGLAS, SEED_SENSORES, SEED_USUARIOS } from "./seed";
 
 const DATA_DIR = path.resolve(process.cwd(), "..", ".data");
 const CAMPOS_PATH = path.join(DATA_DIR, "campos.json");
@@ -35,9 +35,8 @@ function writeFile<T>(filePath: string, data: T[]): void {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
 }
 
-/** Devuelve el email del admin contextual para un usuario dado */
 export function getAdminEmail(email: string): string {
-  const user = findAgricultor(email);
+  const user = findUsuario(email);
   if (!user) return email;
   if (user.rol === "ADMIN") return user.email;
   return user.adminEmail ?? email;
@@ -122,16 +121,38 @@ export function deleteParcelasByCampo(nombreCampo: string): void {
 
 // --- Reglas ---
 
+function normalizarRegla(r: Regla): Regla {
+  return { ...r, camposAsignados: r.camposAsignados ?? [] };
+}
+
 export function readReglas(adminEmail?: string): Regla[] {
-  const all = readFile(REGLAS_PATH, SEED_REGLAS);
+  const all = readFile(REGLAS_PATH, SEED_REGLAS).map(normalizarRegla);
   if (adminEmail) return all.filter((r) => r.adminEmail === adminEmail);
   return all;
+}
+
+export function getRegla(id: string, adminEmail?: string): Regla | undefined {
+  const r = readFile(REGLAS_PATH, SEED_REGLAS).find((r) => r.id === id);
+  return r ? normalizarRegla(r) : undefined;
 }
 
 export function addRegla(regla: Regla): void {
   const reglas = readReglas();
   reglas.push(regla);
   writeFile(REGLAS_PATH, reglas);
+}
+
+export function updateRegla(id: string, data: Partial<Regla>): void {
+  const reglas = readReglas();
+  const idx = reglas.findIndex((r) => r.id === id);
+  if (idx === -1) return;
+  reglas[idx] = { ...reglas[idx], ...data };
+  writeFile(REGLAS_PATH, reglas);
+}
+
+export function deleteRegla(id: string): void {
+  const reglas = readReglas();
+  writeFile(REGLAS_PATH, reglas.filter((r) => r.id !== id));
 }
 
 // --- Sensores ---
@@ -184,10 +205,10 @@ export function readSensoresPorParcela(adminEmail: string, nombreCampo: string, 
   );
 }
 
-// --- Agricultores ---
+// --- Usuarios ---
 
-export function readAgricultores(adminEmail?: string): Agricultor[] {
-  const all = readFile(USUARIOS_PATH, SEED_AGRICULTORES);
+export function readUsuarios(adminEmail?: string): Usuario[] {
+  const all = readFile(USUARIOS_PATH, SEED_USUARIOS);
   if (adminEmail) {
     return all.filter(
       (a) => a.email === adminEmail || (a.rol !== "ADMIN" && a.adminEmail === adminEmail)
@@ -196,25 +217,25 @@ export function readAgricultores(adminEmail?: string): Agricultor[] {
   return all;
 }
 
-export function addAgricultor(agricultor: Agricultor): void {
-  const list = readAgricultores();
-  list.push(agricultor);
+export function addUsuario(usuario: Usuario): void {
+  const list = readUsuarios();
+  list.push(usuario);
   writeFile(USUARIOS_PATH, list);
 }
 
-export function updateAgricultor(email: string, data: Partial<Agricultor>): void {
-  const list = readAgricultores();
+export function updateUsuario(email: string, data: Partial<Usuario>): void {
+  const list = readUsuarios();
   const idx = list.findIndex((a) => a.email === email);
   if (idx === -1) return;
   list[idx] = { ...list[idx], ...data };
   writeFile(USUARIOS_PATH, list);
 }
 
-export function deleteAgricultor(email: string): void {
-  const list = readAgricultores();
+export function deleteUsuario(email: string): void {
+  const list = readUsuarios();
   writeFile(USUARIOS_PATH, list.filter((a) => a.email !== email));
 }
 
-export function findAgricultor(email: string): Agricultor | undefined {
-  return readAgricultores().find((a) => a.email === email);
+export function findUsuario(email: string): Usuario | undefined {
+  return readUsuarios().find((a) => a.email === email);
 }

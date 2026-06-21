@@ -1,6 +1,24 @@
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from modules.analytics_engine.models import AlertaRecomendacion, Prediccion
+from modules.analytics_engine.models import (
+    AlertaRecomendacion,
+    MetricaAgregacion,
+    NivelAlerta,
+    OperadorComparacion,
+    Prediccion,
+    ReglaEvaluacion,
+    ResultadoPrediccion,
+)
+from modules.notification_component import EventType
+
+
+@dataclass
+class ResultadoEvaluacion:
+    alerta: AlertaRecomendacion
+    valor_calculado: float
+    umbral: float
+    event_type: EventType
 
 
 def _filtrar_ventana(
@@ -58,18 +76,23 @@ async def evaluar_umbral_humedad(
     nombreParcela: str,
     umbral: float,
     ventana_minutos: int = 60,
-) -> AlertaRecomendacion | None:
+) -> ResultadoEvaluacion | None:
     ventana = _filtrar_ventana(lecturas, "humedad", ventana_minutos)
     valores = _extraer_valores(ventana)
     promedio = _calcular_promedio(valores)
     if promedio is None:
         return None
     if promedio < umbral:
-        return AlertaRecomendacion(
-            tipo="ALERTA_TIEMPO_REAL",
-            fechaEmision=datetime.now(timezone.utc),
-            mensaje=f"Estrés hídrico detectado en {nombreParcela}: humedad promedio {promedio:.1f}% por debajo del umbral {umbral:.1f}%",
-            nombreParcela=nombreParcela,
+        return ResultadoEvaluacion(
+            alerta=AlertaRecomendacion(
+                tipo="ALERTA_TIEMPO_REAL",
+                fechaEmision=datetime.now(timezone.utc),
+                mensaje=f"Estrés hídrico detectado en {nombreParcela}: humedad promedio {promedio:.1f}% por debajo del umbral {umbral:.1f}%",
+                nombreParcela=nombreParcela,
+            ),
+            valor_calculado=promedio,
+            umbral=umbral,
+            event_type=EventType.HYDRIC_STRESS,
         )
     return None
 
@@ -79,18 +102,23 @@ async def evaluar_umbral_temperatura(
     nombreParcela: str,
     umbral: float,
     ventana_minutos: int = 60,
-) -> AlertaRecomendacion | None:
+) -> ResultadoEvaluacion | None:
     ventana = _filtrar_ventana(lecturas, "temperatura", ventana_minutos)
     valores = _extraer_valores(ventana)
     maximo = _calcular_maximo(valores)
     if maximo is None:
         return None
     if maximo > umbral:
-        return AlertaRecomendacion(
-            tipo="ALERTA_TIEMPO_REAL",
-            fechaEmision=datetime.now(timezone.utc),
-            mensaje=f"Calor extremo detectado en {nombreParcela}: temperatura máxima {maximo:.1f}°C supera el umbral {umbral:.1f}°C",
-            nombreParcela=nombreParcela,
+        return ResultadoEvaluacion(
+            alerta=AlertaRecomendacion(
+                tipo="ALERTA_TIEMPO_REAL",
+                fechaEmision=datetime.now(timezone.utc),
+                mensaje=f"Calor extremo detectado en {nombreParcela}: temperatura máxima {maximo:.1f}°C supera el umbral {umbral:.1f}°C",
+                nombreParcela=nombreParcela,
+            ),
+            valor_calculado=maximo,
+            umbral=umbral,
+            event_type=EventType.HEAT_STRESS,
         )
     return None
 
@@ -153,3 +181,134 @@ async def generar_prediccion(
         fechaIni=fechaIni,
         fechaFin=fechaFin,
     )
+
+
+# ──────────────────────────────────────────────
+# Motor de reglas configurable (Fase 3)
+# ──────────────────────────────────────────────
+
+
+def _calcular_metrica(valores: list[float], metrica: MetricaAgregacion) -> float | None:
+    if not valores:
+        return None
+    if metrica == "promedio":
+        return sum(valores) / len(valores)
+    elif metrica == "maximo":
+        return max(valores)
+    elif metrica == "minimo":
+        return min(valores)
+    return None
+
+
+def _evaluar_condicion(
+    valor_calculado: float,
+    umbral: float,
+    operador: OperadorComparacion,
+) -> bool:
+    if operador == "<":
+        return valor_calculado < umbral
+    elif operador == ">":
+        return valor_calculado > umbral
+    elif operador == "<=":
+        return valor_calculado <= umbral
+    elif operador == ">=":
+        return valor_calculado >= umbral
+    elif operador == "==":
+        return abs(valor_calculado - umbral) < 1e-9
+    return False
+
+
+def _clasificar_alerta(
+    valor_calculado: float,
+    umbral: float,
+    operador: OperadorComparacion,
+) -> NivelAlerta:
+    if _evaluar_condicion(valor_calculado, umbral, operador):
+        return "rojo"
+    margen = abs(umbral) * 0.1 if abs(umbral) > 1e-6 else 0.1
+    # El margen va hacia adentro: para ">" el cercano es un poco menor,
+    # para "<" el cercano es un poco mayor.
+    umbral_cercano = umbral - margen if operador in (">", ">=") else umbral + margen
+    if _evaluar_condicion(valor_calculado, umbral_cercano, operador):
+        return "amarillo"
+    return "verde"
+
+
+def _generar_mensaje(
+    tipo: str,
+    campo_id: str,
+    parcela_id: str | None,
+    valor_calculado: float,
+    umbral: float,
+    nivel: NivelAlerta,
+) -> str:
+    base = f"{campo_id}" + (f" / {parcela_id}" if parcela_id else "")
+    if nivel == "rojo":
+        if tipo == "helada":
+            return f"RIESGO DE HELADA en {base}: {valor_calculado:.1f}°C (umbral {umbral:.1f}°C)"
+        elif tipo == "sequia":
+            return f"RIESGO DE SEQUÍA en {base}: humedad {valor_calculado:.1f}% (umbral {umbral:.1f}%)"
+        elif tipo == "calor_extremo":
+            return f"CALOR EXTREMO en {base}: {valor_calculado:.1f}°C (umbral {umbral:.1f}°C)"
+        elif tipo == "anomalia_humedad":
+            return f"ANOMALÍA DE HUMEDAD en {base}: {valor_calculado:.1f}% (umbral {umbral:.1f}%)"
+        return f"ALERTA en {base}: {valor_calculado:.2f} (umbral {umbral:.2f})"
+    elif nivel == "amarillo":
+        return f"PRECAUCIÓN en {base}: valor {valor_calculado:.2f} cerca del umbral {umbral:.2f}"
+    return f"Sin novedades en {base}"
+
+
+async def evaluar_regla(
+    lecturas: list[dict],
+    regla: ReglaEvaluacion,
+) -> ResultadoPrediccion | None:
+    if not regla.habilitada:
+        return None
+
+    ventana = _filtrar_ventana(lecturas, regla.campo_telemetria, regla.ventana_minutos)
+    if not ventana:
+        return None
+
+    valores = _extraer_valores(ventana)
+    if not valores:
+        return None
+
+    valor_calculado = _calcular_metrica(valores, regla.metrica)
+    if valor_calculado is None:
+        return None
+
+    nivel = _clasificar_alerta(valor_calculado, regla.umbral, regla.operador)
+    if nivel == "verde":
+        return None
+
+    mensaje = _generar_mensaje(
+        regla.tipo,
+        regla.campo_id,
+        regla.parcela_id,
+        valor_calculado,
+        regla.umbral,
+        nivel,
+    )
+
+    return ResultadoPrediccion(
+        regla=regla,
+        campo_id=regla.campo_id,
+        parcela_id=regla.parcela_id,
+        timestamp=datetime.now(timezone.utc),
+        valor_calculado=valor_calculado,
+        nivel_alerta=nivel,
+        mensaje=mensaje,
+        lecturas_consideradas=len(valores),
+    )
+
+
+async def evaluar_reglas(
+    lecturas: list[dict],
+    reglas: list[ReglaEvaluacion],
+) -> list[ResultadoPrediccion]:
+    resultados: list[ResultadoPrediccion] = []
+    for regla in reglas:
+        resultado = await evaluar_regla(lecturas, regla)
+        if resultado is not None:
+            resultados.append(resultado)
+    return resultados

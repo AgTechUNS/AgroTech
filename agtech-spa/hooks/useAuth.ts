@@ -16,11 +16,11 @@ export function useAuth() {
     error: null,
   });
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (emailUsuario: string, password: string) => {
     setState({ isLoading: true, error: null });
 
     try {
-      const data = await loginApi(email, password);
+      const data = await loginApi(emailUsuario, password);
       saveTokens(data.accessToken, data.refreshToken);
       window.location.href = "/dashboard";
     } catch (err) {

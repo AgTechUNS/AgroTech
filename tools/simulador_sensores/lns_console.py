@@ -16,6 +16,8 @@ try:
 except ImportError:
     mqtt = None
 
+from api_client import APIClient
+
 
 # ---------------------------------------------------------------------------
 # Modelos
@@ -53,24 +55,19 @@ class ReceptionLog:
 # Estado del simulador
 # ---------------------------------------------------------------------------
 
-<<<<<<< HEAD
-REGISTRO_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "registro_lns.json")
-=======
 TOOLS_DIR = pathlib.Path(__file__).parent.resolve()
 SPA_DATA_DIR = TOOLS_DIR.parents[1] / ".data"
 
-REGISTRO_FILE = SPA_DATA_DIR / "sensores.json"
-CAMPOS_FILE = SPA_DATA_DIR / "campos.json"
-PARCELAS_FILE = SPA_DATA_DIR / "parcelas.json"
+GATEWAYS_FILE = SPA_DATA_DIR / "gateways.json"
 REGISTRO_LEGACY = TOOLS_DIR / "registro_lns.json"
-
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
 BROKER = os.getenv("BROKER", "localhost")
 PORT = int(os.getenv("PORT", "1883"))
 
 
 class LNSState:
     def __init__(self):
+        self.api = APIClient()
+        self._api_ok = False
         self.campos: list[str] = []
         self.campos_admin: dict[str, str] = {}
         self.gateways: list[Gateway] = []
@@ -84,88 +81,58 @@ class LNSState:
         self.packet_count = 0
         self.last_packet_info = ""
 
-<<<<<<< HEAD
-    def load(self):
-        if not os.path.exists(REGISTRO_FILE):
+    def _load_spa_campos(self):
+        if not self._api_ok:
             return
         try:
-            with open(REGISTRO_FILE) as f:
-                data = json.load(f)
-            self.campos = data.get("campos", [])
-            self.gateways = [Gateway(**g) for g in data.get("gateways", [])]
-            self.sensors = [Sensor(**s) for s in data.get("sensors", [])]
-        except Exception:
-            pass
-
-    def save(self):
-        data = {
-            "campos": self.campos,
-            "gateways": [asdict(g) for g in self.gateways],
-            "sensors": [asdict(s) for s in self.sensors],
-=======
-    def _load_spa_campos(self):
-        try:
-            if os.path.exists(CAMPOS_FILE):
-                with open(CAMPOS_FILE) as f:
-                    data = json.load(f)
-                if isinstance(data, list):
-                    self.campos = [c["nombreCampo"] for c in data if "nombreCampo" in c]
-                    self.campos_admin = {c["nombreCampo"]: c.get("adminEmail", "") for c in data}
+            api_campos = self.api.get_campos()
+            self.campos = [c.nombre_campo for c in api_campos]
+            self.campos_admin = {}
         except Exception:
             pass
 
     def _load_spa_parcelas(self, campo_id):
+        if not self._api_ok:
+            return []
         try:
-            if os.path.exists(PARCELAS_FILE):
-                with open(PARCELAS_FILE) as f:
-                    data = json.load(f)
-                if isinstance(data, list):
-                    return [p["nombreParcela"] for p in data if p.get("nombreCampo") == campo_id]
+            api_parcelas = self.api.get_parcelas(campo_id)
+            return [p.nombre_parcela for p in api_parcelas]
         except Exception:
-            pass
-        return []
+            return []
 
     def _read_sensor_file(self):
-        """Read .data/sensores.json (camelCase format)"""
+        """Read sensors from API, gateways from local file."""
+        if self._api_ok:
+            try:
+                api_sensors = self.api.get_sensores()
+                self.sensors = [Sensor(s.device_id, s.nombre_campo, s.nombre_parcela, s.admin_email) for s in api_sensors if s.activo]
+            except Exception:
+                pass
         try:
-            if os.path.exists(REGISTRO_FILE):
-                with open(REGISTRO_FILE) as f:
+            if os.path.exists(GATEWAYS_FILE):
+                with open(GATEWAYS_FILE) as f:
                     data = json.load(f)
-                self.gateways = [Gateway(gw["gatewayId"], gw["nombreCampo"], gw.get("adminEmail", "")) for gw in data.get("gateways", [])]
-                raw_sensors = data.get("sensors", [])
-                self.sensors = []
-                for s in raw_sensors:
-                    if s.get("activo", True):
-                        self.sensors.append(Sensor(s["deviceId"], s["nombreCampo"], s["nombreParcela"], s.get("adminEmail", "")))
-            elif os.path.exists(REGISTRO_LEGACY):
-                with open(REGISTRO_LEGACY) as f:
-                    data = json.load(f)
-                self.gateways = [Gateway(g["gateway_id"], g["campo_id"]) for g in data.get("gateways", [])]
-                self.sensors = [Sensor(s["device_id"], s["campo_id"], s["parcela_id"]) for s in data.get("sensors", [])]
+                self.gateways = [Gateway(gw["gatewayId"], gw["nombreCampo"], gw.get("adminEmail", "")) for gw in data]
         except Exception:
             pass
 
-    def _write_sensor_file(self):
-        """Write .data/sensores.json (camelCase format)"""
+    def _write_gateways_file(self):
         SPA_DATA_DIR.mkdir(parents=True, exist_ok=True)
-        data = {
-            "gateways": [{"gatewayId": g.gateway_id, "nombreCampo": g.campo_id} for g in self.gateways],
-            "sensors": [{"deviceId": s.device_id, "nombreCampo": s.campo_id, "nombreParcela": s.parcela_id, "tipo": "temperatura_humedad", "activo": True} for s in self.sensors],
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
-        }
-        with open(REGISTRO_FILE, "w") as f:
+        data = [{"gatewayId": g.gateway_id, "nombreCampo": g.campo_id} for g in self.gateways]
+        with open(GATEWAYS_FILE, "w") as f:
             json.dump(data, f, indent=2)
 
-<<<<<<< HEAD
-=======
     def load(self):
+        try:
+            self.api.authenticate()
+            self._api_ok = True
+        except Exception:
+            self._api_ok = False
         self._load_spa_campos()
         self._read_sensor_file()
 
     def save(self):
-        self._write_sensor_file()
-
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
+        self._write_gateways_file()
     def sensores_sin_cobertura(self) -> list[Sensor]:
         campos_con_gw = {g.campo_id for g in self.gateways}
         return [s for s in self.sensors if s.campo_id not in campos_con_gw]
@@ -359,11 +326,8 @@ class App:
             content_end = self._draw_historial(content_top, h, w)
         elif self.view == "list_selection":
             content_end = self._draw_list_selection(content_top, h, w)
-<<<<<<< HEAD
-=======
         elif self.view == "parcela_select":
             content_end = self._draw_parcela_select(content_top, h, w)
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
 
         self._draw_log_panel(content_end + 1, h - 1, h, w)
 
@@ -393,7 +357,8 @@ class App:
             ("1", "Gestionar campo"),
             ("2", "Iniciar / Detener transmision LNS"),
             ("3", "Mostrar ultimas recepciones"),
-            ("4", "Salir"),
+            ("4", "Sincronizar datos desde la SPA"),
+            ("5", "Salir"),
         ]
         for i, (key, label) in enumerate(items):
             self.write(y + i, 4, f"[{key}]  {label}")
@@ -401,19 +366,12 @@ class App:
 
     def _draw_campo_select(self, y, h, w):
         if not self.state.campos:
-<<<<<<< HEAD
-            self.write(y, 4, "No hay campos registrados.", 3)
-            self.write(y + 1, 4, "Cree un campo o registre una gateway.")
-            y += 2
-        else:
-=======
             self.write(y, 4, "No hay campos en la aplicacion web.", 3)
             self.write(y + 1, 4, "Crealos desde la SPA (app web) primero.")
             y += 2
         else:
             self.write(y, 4, "Campos sincronizados de la aplicacion web:", 6)
             y += 1
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
             for i, campo in enumerate(self.state.campos):
                 gw = len(self.state.gateways_del_campo(campo))
                 sn = len(self.state.sensors_del_campo(campo))
@@ -422,11 +380,7 @@ class App:
 
             y += len(self.state.campos)
 
-<<<<<<< HEAD
-        self.write(y, 4, "[N]  Crear nuevo campo")
-=======
         self.write(y, 4, "[N]  Crear nuevo campo (solo local)")
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
         self.write(y + 1, 4, "[0]  Volver")
         return y + 2
 
@@ -557,8 +511,6 @@ class App:
         self.write(y, 4, prompt)
         return y + 1
 
-<<<<<<< HEAD
-=======
     def _draw_parcela_select(self, y, h, w):
         campo_id = self.view_data.get("campo_id", "")
         parcelas = self.view_data.get("parcelas", [])
@@ -575,8 +527,6 @@ class App:
             y += len(parcelas)
         self.write(y, 4, "[0]  Cancelar")
         return y + 1
-
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
     # ---------------------------------------------------------------
     # Manejo de entrada
     # ---------------------------------------------------------------
@@ -609,11 +559,8 @@ class App:
             self._handle_list_key(key)
         elif self.view == "list_selection":
             self._handle_list_selection_key(key)
-<<<<<<< HEAD
-=======
         elif self.view == "parcela_select":
             self._handle_parcela_select_key(key)
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
 
     def _handle_input_key(self, key):
         if key == 10 or key == curses.KEY_ENTER:
@@ -643,16 +590,35 @@ class App:
         self.input_cb = callback
         curses.curs_set(1)
 
+    def _sync_from_api(self):
+        self.show_msg("Conectando con el backend...")
+        try:
+            self.state.api.authenticate()
+            self.state._api_ok = True
+            self.state._load_spa_campos()
+            self.show_msg("Datos sincronizados correctamente")
+        except Exception as e:
+            self.state._api_ok = False
+            self.show_msg(f"Error: {e}")
+
     def _handle_main_key(self, key):
         ch = chr(key) if 48 <= key <= 57 else ""
         if ch == "1":
             self.view = "campo_select"
+            self._on_enter_campo_select()
         elif ch == "2":
             self._toggle_transmision()
         elif ch == "3":
             self.view = "historial"
         elif ch == "4":
+            self._sync_from_api()
+        elif ch == "5":
             self.running = False
+
+    def _on_enter_campo_select(self):
+        if not self.state.campos and not self.state._api_ok:
+            self.show_msg("Conectando con el backend...")
+            self._sync_from_api()
 
     def _handle_campo_select_key(self, key):
         ch = chr(key) if 48 <= key <= 57 else ""
@@ -721,9 +687,6 @@ class App:
         if any(s.device_id == dev_id for s in self.state.sensors):
             self.show_msg(f"El sensor '{dev_id}' ya existe")
             return
-<<<<<<< HEAD
-        self.start_input("ID de la parcela:", lambda p: self._register_sensor_final(campo_id, dev_id, p))
-=======
         parcelas = self.state._load_spa_parcelas(campo_id)
         if not parcelas:
             self.start_input("ID de la parcela (no hay parcelas en SPA):", lambda p: self._register_sensor_final(campo_id, dev_id, p))
@@ -734,13 +697,18 @@ class App:
                 "parcelas": parcelas,
                 "dev_id": dev_id,
             }
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
 
     def _register_sensor_final(self, campo_id, dev_id, parcela):
         parcela = parcela.strip()
         if not parcela:
             self.show_msg("Parcela invalida")
             return
+        if self.state._api_ok:
+            try:
+                self.state.api.create_sensor(dev_id, campo_id, parcela)
+            except Exception as e:
+                self.show_msg(f"Error al crear sensor en API: {e}")
+                return
         admin_email = self.state.campos_admin.get(campo_id, "")
         self.state.sensors.append(Sensor(device_id=dev_id, campo_id=campo_id, parcela_id=parcela, admin_email=admin_email))
         gws = self.state.gateways_del_campo(campo_id)
@@ -748,7 +716,6 @@ class App:
             self.show_msg(f"⚠ Sensor '{dev_id}' registrado, pero '{campo_id}' no tiene gateways")
         else:
             self.show_msg(f"Sensor '{dev_id}' registrado en '{campo_id}', parcela '{parcela}'")
-        self.state.save()
 
     def _delete_gw(self, campo_id):
         gws = self.state.gateways_del_campo(campo_id)
@@ -809,15 +776,18 @@ class App:
                         self.show_msg(f"⚠ {len(sin_cob_campo)} sensor(es) perdieron cobertura")
                     else:
                         self.show_msg(f"Gateway '{item.gateway_id}' eliminada")
+                    self.state._write_gateways_file()
                 elif tipo == "sensor":
                     self.state.sensors.remove(item)
+                    if self.state._api_ok:
+                        try:
+                            self.state.api.delete_sensor(item.device_id)
+                        except Exception:
+                            pass
                     self.show_msg(f"Sensor '{item.device_id}' eliminado")
-                self.state.save()
                 self.view = "campo_menu"
                 self.view_data = {"campo_id": campo_id}
 
-<<<<<<< HEAD
-=======
     def _handle_parcela_select_key(self, key):
         ch = chr(key) if 48 <= key <= 57 else ""
         campo_id = self.view_data.get("campo_id", "")
@@ -831,8 +801,6 @@ class App:
             idx = int(ch) - 1
             if 0 <= idx < len(parcelas):
                 self._register_sensor_final(campo_id, dev_id, parcelas[idx])
-
->>>>>>> 79c7de8be4ef00db6287257c6007a2e10df77c8c
     def _toggle_transmision(self):
         if self.state.transmitiendo:
             self.state.transmitiendo = False

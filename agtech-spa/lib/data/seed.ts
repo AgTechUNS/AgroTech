@@ -1,4 +1,4 @@
-import { Campo, Parcela, Regla, Sensor, Agricultor } from "@/lib/types";
+import { Campo, Parcela, Regla, Sensor, Usuario } from "@/lib/types";
 
 const ADMIN1 = "test@agtechuns.com";
 const ADMIN2 = "admin2@ejemplo.com";
@@ -82,13 +82,10 @@ export const SEED_PARCELAS: Parcela[] = [
 ];
 
 export const SEED_REGLAS: Regla[] = [
-  { metrica: "temperatura", operador: ">=", valor: 38.0, adminEmail: ADMIN1 },
-  { metrica: "humedad_suelo", operador: "<=", valor: 20.0, adminEmail: ADMIN1 },
-  { metrica: "precipitacion", operador: "<", valor: 5.0, adminEmail: ADMIN1 },
-  { metrica: "viento", operador: ">=", valor: 50.0, adminEmail: ADMIN1 },
-  { metrica: "ndvi", operador: "<=", valor: 0.3, adminEmail: ADMIN1 },
-  { metrica: "temperatura", operador: ">=", valor: 35.0, adminEmail: ADMIN2 },
-  { metrica: "humedad_suelo", operador: "<=", valor: 25.0, adminEmail: ADMIN2 },
+  { id: "regla-helada", nombre: "Alerta de helada", descripcion: "Detecta temperaturas bajo cero", metrica: "temperatura", operador: "<", valor: 2.0, adminEmail: ADMIN1, camposAsignados: ["Campo Los Pinos", "Campo El Ombú"] },
+  { id: "regla-estres-hidrico", nombre: "Estrés hídrico", descripcion: "Alerta por humedad del suelo crítica", metrica: "humedad_suelo", operador: "<=", valor: 20.0, adminEmail: ADMIN1, camposAsignados: ["Campo Los Pinos"] },
+  { id: "regla-calor-extremo", nombre: "Calor extremo", descripcion: "Alerta por temperaturas muy altas", metrica: "temperatura", operador: ">=", valor: 35.0, adminEmail: ADMIN1, camposAsignados: ["Campo La Esperanza", "Campo Los Pinos"] },
+  { id: "regla-sequia", nombre: "Sequía prolongada", descripcion: "Alerta por falta de lluvias", metrica: "precipitacion", operador: "<", valor: 5.0, adminEmail: ADMIN2, camposAsignados: ["Campo La Esperanza"] },
 ];
 
 export const SEED_SENSORES: Sensor[] = [
@@ -100,8 +97,9 @@ export const SEED_SENSORES: Sensor[] = [
   { deviceId: "SNS-006", nombreCampo: "Campo La Esperanza", nombreParcela: "Lote A", tipo: "lluvia", activo: true, adminEmail: ADMIN2 },
 ];
 
-export const SEED_AGRICULTORES: Agricultor[] = [
+export const SEED_USUARIOS: Usuario[] = [
   { email: "test@agtechuns.com", nombre: "Admin", password: "12345678", rol: "ADMIN" },
   { email: "admin2@ejemplo.com", nombre: "Admin Dos", password: "12345678", rol: "ADMIN" },
-  { email: "agricultor@ejemplo.com", nombre: "Agricultor Uno", password: "12345678", rol: "agricultor", adminEmail: ADMIN1 },
+  { email: "agronomo@ejemplo.com", nombre: "Agrónomo Uno", password: "12345678", rol: "AGRONOMO", adminEmail: ADMIN1 },
+  { email: "productor@ejemplo.com", nombre: "Productor Uno", password: "12345678", rol: "PRODUCTOR", adminEmail: ADMIN1 },
 ];

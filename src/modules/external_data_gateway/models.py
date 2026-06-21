@@ -41,3 +41,17 @@ class SatelliteResponse(BaseModel):
 class SatelitalResponse(BaseModel):
     ndvi: float = Field(..., ge=-1, le=1)
     humedad_suelo_estimada: float = Field(..., ge=0, le=100)
+
+
+class SatelitalHistorialItem(BaseModel):
+    id_imagen: str
+    fecha_captura: UTCDatetime
+    ndvi: float | None = None
+    ndmi: float | None = None
+
+
+class CampoNdviItem(BaseModel):
+    nombre_parcela: str
+    ndvi: float | None = None
+    ndmi: float | None = None
+    fecha_captura: UTCDatetime | None = None

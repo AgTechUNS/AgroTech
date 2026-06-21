@@ -8,8 +8,8 @@ Aísla al resto del monolito de fallas, latencias y cambios de formato de provee
 
 | Método | Ruta | Responsabilidad |
 |--------|------|----------------|
-| GET | `/external-data/weather` | Temperatura y humedad desde Open-Meteo |
-| GET | `/external-data/satellite/{parcel_id}` | NDVI y NDMI desde Google Earth Engine |
+| GET | `/external/weather` | Temperatura y humedad desde Open-Meteo |
+| GET | `/external/satelital` | NDVI y NDMI desde Google Earth Engine |
 
 ## Consumo desde otros módulos
 
@@ -36,7 +36,7 @@ import httpx
 
 async with httpx.AsyncClient() as client:
     r = await client.get(
-        "http://gateway/external-data/weather",
+        "http://gateway/external/weather",
         params={"lat": -33.45, "lon": -66.28},
     )
     data = r.json()  # WeatherResponse
@@ -47,7 +47,8 @@ async with httpx.AsyncClient() as client:
 | Código | Significado | Causa |
 |--------|-------------|-------|
 | 200 | OK | Datos disponibles |
-| 404 | No disponible | Sin imagen satelital para la coordenada / ventana de tiempo |
+| 400 | GeoJSON inválido | El formato de coordenadas no es válido |
+| 502 | Satélite no disponible | Sin imagen satelital para la coordenada / ventana de tiempo |
 | 500 | Error externo | Open-Meteo o GEE no respondieron |
 
 ## Variables de entorno requeridas

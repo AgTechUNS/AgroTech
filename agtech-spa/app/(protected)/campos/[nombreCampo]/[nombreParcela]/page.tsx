@@ -7,12 +7,14 @@ import dynamic from "next/dynamic";
 import { listarCampos } from "@/lib/services/campos";
 import { listarParcelas, eliminarParcela } from "@/lib/services/parcelas";
 import { listarSensores, listarLecturas } from "@/lib/services/sensores";
-import { Campo, Parcela, Sensor, Lectura } from "@/lib/types";
+import { obtenerSatelital, obtenerHistorialSatelital } from "@/lib/services/external";
+import { Campo, Parcela, Sensor, Lectura, SatelitalHistorialItem } from "@/lib/types";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { puedeEditar } from "@/lib/auth/roles";
 import { Card, Button, Spinner } from "@/components/ui";
 import { SensorCard } from "@/components/sensors/SensorCard";
 import { SensorChart } from "@/components/sensors/SensorChart";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 const FieldsMap = dynamic(
   () => import("@/components/map/FieldsMap").then((m) => m.FieldsMap),
@@ -30,6 +32,10 @@ export default function ParcelaDetallePage() {
   const [sensores, setSensores] = useState<Sensor[]>([]);
   const [lecturas, setLecturas] = useState<Lectura[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ndviData, setNdviData] = useState<Record<string, number>>({});
+  const [ndviHistorial, setNdviHistorial] = useState<SatelitalHistorialItem[]>([]);
+  const [satelitalError, setSatelitalError] = useState(false);
+
 
   useEffect(() => {
     setLoading(true);
@@ -41,16 +47,31 @@ export default function ParcelaDetallePage() {
         res.data.find((p) => p.nombreParcela === nombreParcela) ?? null
       ),
       listarSensores(),
-      listarLecturas(nombreCampo, nombreParcela),
     ])
-      .then(([c, p, s, l]) => {
+      .then(([c, p, s]) => {
         setCampo(c);
         setParcela(p);
         setSensores(s.filter((sen) => sen.nombreCampo === nombreCampo && sen.nombreParcela === nombreParcela));
-        setLecturas(l);
+        if (p) {
+          obtenerSatelital(p.coordenadasParcela, p.nombreParcela, c?.nombreCampo)
+            .then((data) => setNdviData({ [p.nombreParcela]: data.ndvi, [c?.nombreCampo ?? ""]: data.ndvi }))
+            .catch(() => setSatelitalError(true));
+        }
+        obtenerHistorialSatelital(nombreParcela, nombreCampo)
+          .then(setNdviHistorial)
+          .catch(() => {});
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  }, [nombreCampo, nombreParcela]);
+
+  useEffect(() => {
+    const fetchLecturas = () => {
+      listarLecturas(nombreCampo, nombreParcela).then(setLecturas).catch(() => {});
+    };
+    fetchLecturas();
+    const interval = setInterval(fetchLecturas, 5000);
+    return () => clearInterval(interval);
   }, [nombreCampo, nombreParcela]);
 
   if (loading) return <Spinner />;
@@ -71,7 +92,7 @@ export default function ParcelaDetallePage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <div>
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>{nombreParcela}</h1>
-          <p style={{ color: "#64748b", margin: "0.3rem 0 0", fontSize: "0.9rem" }}>
+          <p style={{ color: "var(--text-secondary)", margin: "0.3rem 0 0", fontSize: "0.9rem" }}>
             {campo?.nombreCampo} — {parcela.nombreCultivo ? `${parcela.nombreCultivo} (${parcela.variedad})` : "Sin cultivo"}
           </p>
         </div>
@@ -83,7 +104,7 @@ export default function ParcelaDetallePage() {
               </Link>
               <Button
                 variant="ghost"
-                style={{ color: "#e74c3c" }}
+                style={{ color: "var(--danger)" }}
                 onClick={async () => {
                   if (!window.confirm(`¿Eliminar "${nombreParcela}"?`)) return;
                   try {
@@ -103,12 +124,32 @@ export default function ParcelaDetallePage() {
       </div>
 
       <Card style={{ padding: "0.5rem", marginBottom: "1.5rem" }}>
-        {campo && <FieldsMap fields={[campo]} parcels={[parcela]} sensores={sensores} height={300} />}
+        {campo && <FieldsMap fields={[campo]} parcels={[parcela]} sensores={sensores} lecturas={lecturas} height={300} />}
       </Card>
+      {ndviData[nombreParcela] !== undefined && (
+        <Card style={{ marginBottom: "1.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <span style={{ fontSize: "1.5rem" }}>🌿</span>
+            <div>
+              <p style={{ margin: 0, fontWeight: 600 }}>NDVI: {ndviData[nombreParcela].toFixed(3)}</p>
+              <p style={{ margin: "0.2rem 0 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                Índice de vegetación de diferencia normalizada — {ndviData[nombreParcela] >= 0.7 ? "Vegetación muy saludable" : ndviData[nombreParcela] >= 0.5 ? "Vegetación moderada" : ndviData[nombreParcela] >= 0.3 ? "Vegetación escasa" : "Suelo desnudo / estrés severo"}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+      {satelitalError && (
+        <Card style={{ marginBottom: "1.5rem" }}>
+          <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.85rem" }}>
+            ⚠️ No se pudieron obtener datos satelitales. Mostrando colores por defecto en el mapa.
+          </p>
+        </Card>
+      )}
 
       <Card title={`Sensores (${activos.length} activos)`} style={{ marginBottom: "1.5rem" }}>
         {activos.length === 0 ? (
-          <p style={{ color: "#94a3b8", textAlign: "center", padding: "1rem" }}>
+          <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "1rem" }}>
             No hay sensores activos en esta parcela.
           </p>
         ) : (
@@ -131,6 +172,23 @@ export default function ParcelaDetallePage() {
       {lecturas.length > 0 && (
         <Card title="Últimas lecturas">
           <SensorChart lecturas={lecturas} />
+        </Card>
+      )}
+
+      {ndviHistorial.length > 1 && (
+        <Card title="Historial NDVI">
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={ndviHistorial.map((h) => ({ ...h, fecha: new Date(h.fecha_captura).toLocaleDateString() }))}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border, #334155)" />
+              <XAxis dataKey="fecha" fontSize={11} tick={{ fill: "var(--text-secondary, #94a3b8)" }} />
+              <YAxis domain={[-1, 1]} fontSize={11} tick={{ fill: "var(--text-secondary, #94a3b8)" }} />
+              <Tooltip
+                contentStyle={{ background: "var(--card-bg, #1e293b)", border: "1px solid var(--border, #334155)", borderRadius: 8 }}
+                labelStyle={{ color: "var(--text-primary, #f1f5f9)" }}
+              />
+              <Line type="monotone" dataKey="ndvi" stroke="#22c55e" strokeWidth={2} dot={{ fill: "#22c55e", r: 3 }} connectNulls />
+            </LineChart>
+          </ResponsiveContainer>
         </Card>
       )}
     </div>
