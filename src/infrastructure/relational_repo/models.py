@@ -145,6 +145,7 @@ class ParcelaImagenSatelital(Base):
     nombre_campo: Mapped[str] = mapped_column(String(255), primary_key=True)
     indice_ndvi: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     indice_ndmi: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    imagen: Mapped["ImagenSatelital"] = relationship(lazy="joined")
 
 
 # ── Ejecucion Batch ─────────────────────────────────────────────────

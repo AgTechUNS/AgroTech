@@ -4,8 +4,8 @@ import { proxyToBackend } from "@/lib/proxy";
 import { WeatherResponse } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
-  const proxy = await proxyToBackend(request, "/api/external/weather", "GET");
-  if (proxy) return proxy;
+  const proxy = await proxyToBackend(request, "/external/weather", "GET");
+  if (proxy && proxy.status < 400) return proxy;
   const user = getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });

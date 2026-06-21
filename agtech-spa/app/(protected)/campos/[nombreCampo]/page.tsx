@@ -8,7 +8,7 @@ import { listarCampos, eliminarCampo } from "@/lib/services/campos";
 import { listarParcelas, eliminarParcela } from "@/lib/services/parcelas";
 import { listarSensores, listarLecturas } from "@/lib/services/sensores";
 import { listarReglas, editarRegla } from "@/lib/services/reglas";
-import { obtenerSatelital } from "@/lib/services/external";
+import { obtenerSatelital, obtenerNdviCampo } from "@/lib/services/external";
 import { Campo, Parcela, Sensor, Regla, Lectura } from "@/lib/types";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { puedeEditar, puedeCrearReglas } from "@/lib/auth/roles";
@@ -32,6 +32,7 @@ export default function CampoDetallePage() {
   const [asignando, setAsignando] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [ndviData, setNdviData] = useState<Record<string, number>>({});
+  const [ndviParcela, setNdviParcela] = useState<Record<string, number>>({});
   const [satelitalError, setSatelitalError] = useState(false);
 
   useEffect(() => {
@@ -50,9 +51,35 @@ export default function CampoDetallePage() {
         setSensores(s.filter((sen) => sen.nombreCampo === nombreCampo));
         setTodasReglas(reglas as Regla[]);
         if (c) {
-          obtenerSatelital(c.coordenadasCampo)
-            .then((data) => setNdviData({ [c.nombreCampo]: data.ndvi }))
+          obtenerSatelital(c.coordenadasCampo, "", c.nombreCampo)
+            .then((data) => {
+              setNdviData({ [c.nombreCampo]: data.ndvi });
+              obtenerNdviCampo(nombreCampo)
+                .then((items) => {
+                  const map: Record<string, number> = {};
+                  for (const item of items) {
+                    if (item.ndvi !== null) map[item.nombre_parcela] = item.ndvi;
+                  }
+                  for (const parc of p) {
+                    if (map[parc.nombreParcela] === undefined) {
+                      map[parc.nombreParcela] = data.ndvi;
+                    }
+                  }
+                  setNdviParcela(map);
+                })
+                .catch(() => {});
+            })
             .catch(() => setSatelitalError(true));
+        } else {
+          obtenerNdviCampo(nombreCampo)
+            .then((items) => {
+              const map: Record<string, number> = {};
+              for (const item of items) {
+                if (item.ndvi !== null) map[item.nombre_parcela] = item.ndvi;
+              }
+              setNdviParcela(map);
+            })
+            .catch(() => {});
         }
       })
       .catch(() => {})
@@ -121,7 +148,7 @@ export default function CampoDetallePage() {
       </div>
 
       <Card style={{ padding: "0.5rem", marginBottom: "1.5rem" }}>
-        <FieldsMap fields={[campo]} parcels={parcelas} sensores={sensores} lecturas={lecturas} height={400} />
+        <FieldsMap fields={[campo]} parcels={parcelas} sensores={sensores} lecturas={lecturas} ndviPorParcela={ndviParcela} height={400} />
       </Card>
       {ndviData[campo.nombreCampo] !== undefined && (
         <Card style={{ marginBottom: "1.5rem" }}>

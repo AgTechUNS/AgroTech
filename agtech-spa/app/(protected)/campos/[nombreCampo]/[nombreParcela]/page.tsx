@@ -7,13 +7,14 @@ import dynamic from "next/dynamic";
 import { listarCampos } from "@/lib/services/campos";
 import { listarParcelas, eliminarParcela } from "@/lib/services/parcelas";
 import { listarSensores, listarLecturas } from "@/lib/services/sensores";
-import { obtenerSatelital } from "@/lib/services/external";
-import { Campo, Parcela, Sensor, Lectura } from "@/lib/types";
+import { obtenerSatelital, obtenerHistorialSatelital } from "@/lib/services/external";
+import { Campo, Parcela, Sensor, Lectura, SatelitalHistorialItem } from "@/lib/types";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { puedeEditar } from "@/lib/auth/roles";
 import { Card, Button, Spinner } from "@/components/ui";
 import { SensorCard } from "@/components/sensors/SensorCard";
 import { SensorChart } from "@/components/sensors/SensorChart";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 const FieldsMap = dynamic(
   () => import("@/components/map/FieldsMap").then((m) => m.FieldsMap),
@@ -32,7 +33,9 @@ export default function ParcelaDetallePage() {
   const [lecturas, setLecturas] = useState<Lectura[]>([]);
   const [loading, setLoading] = useState(true);
   const [ndviData, setNdviData] = useState<Record<string, number>>({});
+  const [ndviHistorial, setNdviHistorial] = useState<SatelitalHistorialItem[]>([]);
   const [satelitalError, setSatelitalError] = useState(false);
+
 
   useEffect(() => {
     setLoading(true);
@@ -50,10 +53,13 @@ export default function ParcelaDetallePage() {
         setParcela(p);
         setSensores(s.filter((sen) => sen.nombreCampo === nombreCampo && sen.nombreParcela === nombreParcela));
         if (p) {
-          obtenerSatelital(p.coordenadasParcela)
+          obtenerSatelital(p.coordenadasParcela, p.nombreParcela, c?.nombreCampo)
             .then((data) => setNdviData({ [p.nombreParcela]: data.ndvi, [c?.nombreCampo ?? ""]: data.ndvi }))
             .catch(() => setSatelitalError(true));
         }
+        obtenerHistorialSatelital(nombreParcela, nombreCampo)
+          .then(setNdviHistorial)
+          .catch(() => {});
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -166,6 +172,23 @@ export default function ParcelaDetallePage() {
       {lecturas.length > 0 && (
         <Card title="Últimas lecturas">
           <SensorChart lecturas={lecturas} />
+        </Card>
+      )}
+
+      {ndviHistorial.length > 1 && (
+        <Card title="Historial NDVI">
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={ndviHistorial.map((h) => ({ ...h, fecha: new Date(h.fecha_captura).toLocaleDateString() }))}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border, #334155)" />
+              <XAxis dataKey="fecha" fontSize={11} tick={{ fill: "var(--text-secondary, #94a3b8)" }} />
+              <YAxis domain={[-1, 1]} fontSize={11} tick={{ fill: "var(--text-secondary, #94a3b8)" }} />
+              <Tooltip
+                contentStyle={{ background: "var(--card-bg, #1e293b)", border: "1px solid var(--border, #334155)", borderRadius: 8 }}
+                labelStyle={{ color: "var(--text-primary, #f1f5f9)" }}
+              />
+              <Line type="monotone" dataKey="ndvi" stroke="#22c55e" strokeWidth={2} dot={{ fill: "#22c55e", r: 3 }} connectNulls />
+            </LineChart>
+          </ResponsiveContainer>
         </Card>
       )}
     </div>

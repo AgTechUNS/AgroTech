@@ -102,6 +102,20 @@ export interface SatelitalData {
   humedad_suelo_estimada: number;
 }
 
+export interface SatelitalHistorialItem {
+  id_imagen: string;
+  fecha_captura: string;
+  ndvi: number | null;
+  ndmi: number | null;
+}
+
+export interface CampoNdviItem {
+  nombre_parcela: string;
+  ndvi: number | null;
+  ndmi: number | null;
+  fecha_captura: string | null;
+}
+
 export interface Sensor {
   deviceId: string;
   nombreCampo: string;

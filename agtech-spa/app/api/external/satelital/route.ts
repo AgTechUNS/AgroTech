@@ -6,8 +6,8 @@ import { SatelitalData } from "@/lib/types";
 const BACKEND_URL = process.env.BACKEND_URL;
 
 export async function GET(request: NextRequest) {
-  const proxy = await proxyToBackend(request, "/api/external/satelital", "GET");
-  if (proxy) return proxy;
+  const proxy = await proxyToBackend(request, "/external/satelital", "GET");
+  if (proxy && proxy.status < 400) return proxy;
   const user = getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });

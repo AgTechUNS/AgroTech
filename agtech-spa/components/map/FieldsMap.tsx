@@ -14,6 +14,7 @@ interface FieldsMapProps {
   sensores?: Sensor[];
   lecturas?: Lectura[];
   height?: number;
+  ndviPorParcela?: Record<string, number>;
 }
 
 function FitBounds({ items, getCoords }: { items: unknown[]; getCoords: (item: unknown) => string }) {
@@ -56,7 +57,23 @@ function toGeoJSON(raw: string): unknown | null {
 const FIELD_COLORS = ["#60a5fa", "#34d399", "#fbbf24", "#a78bfa", "#f87171", "#2dd4bf"];
 const PARCEL_COLORS = ["#f87171", "#fb923c", "#c084fc", "#2dd4bf", "#fbbf24"];
 
-export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400 }: FieldsMapProps) {
+function ndviColor(ndvi: number | undefined): string {
+  if (ndvi === undefined) return "#94a3b8";
+  if (ndvi >= 0.7) return "#22c55e";
+  if (ndvi >= 0.5) return "#84cc16";
+  if (ndvi >= 0.3) return "#eab308";
+  return "#ef4444";
+}
+
+function ndviLabel(ndvi: number | undefined): string {
+  if (ndvi === undefined) return "Sin datos";
+  if (ndvi >= 0.7) return "Muy saludable";
+  if (ndvi >= 0.5) return "Moderado";
+  if (ndvi >= 0.3) return "Escaso";
+  return "Estrés severo";
+}
+
+export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400, ndviPorParcela }: FieldsMapProps) {
   const { theme } = useTheme();
   const hasData = (fields && fields.length > 0) || (parcels && parcels.length > 0);
   if (!hasData) return null;
@@ -123,17 +140,20 @@ export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400 }:
       const geo = toGeoJSON(p.coordenadasParcela);
       if (!geo) return;
 
-      // Sensors from DB for this parcel
       const parcelaSensores = sensoresByParcela[p.nombreParcela] ?? [];
       const activos = parcelaSensores.filter((s) => s.activo);
-      // Sensor IDs from lecturas for this parcel
       const lecturasSensorIds = lecturasByParcela[p.nombreParcela] ?? [];
-      // Union: known sensor IDs from both sources
       const allSensorIds: string[] = [];
       activos.forEach(s => { if (!allSensorIds.includes(s.deviceId)) allSensorIds.push(s.deviceId); });
       lecturasSensorIds.forEach(sid => { if (!allSensorIds.includes(sid)) allSensorIds.push(sid); });
 
+      const ndvi = ndviPorParcela?.[p.nombreParcela];
+      const color = ndvi !== undefined ? ndviColor(ndvi) : PARCEL_COLORS[i % PARCEL_COLORS.length];
+
       let tooltip = `<b>${p.nombreParcela}</b>`;
+      if (ndvi !== undefined) {
+        tooltip += `<br/><span style="font-size:0.85rem;">🌿 NDVI: <b>${ndvi.toFixed(3)}</b> — ${ndviLabel(ndvi)}</span>`;
+      }
       if (p.nombreCultivo) tooltip += `<br/>${p.nombreCultivo}${p.variedad ? ` — ${p.variedad}` : ""}`;
       if (p.descripcionParcela) tooltip += `<br/><span style="font-size:0.85rem;color:#94a3b8;">${p.descripcionParcela}</span>`;
       if (allSensorIds.length > 0) {
@@ -153,9 +173,9 @@ export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400 }:
       allItems.push({
         geo,
         style: {
-          color: PARCEL_COLORS[i % PARCEL_COLORS.length],
+          color,
           weight: 3,
-          fillOpacity: 0.2,
+          fillOpacity: ndvi !== undefined ? 0.35 : 0.2,
         },
         tooltip,
       });
@@ -163,8 +183,10 @@ export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400 }:
     });
   }
 
+  const hasNdvi = ndviPorParcela && Object.values(ndviPorParcela).some((v) => v !== undefined);
+
   return (
-    <div style={{ borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid var(--border)" }}>
+    <div style={{ borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid var(--border)", position: "relative" }}>
       <MapContainer
         center={[-38.0, -62.5]}
         zoom={6}
@@ -193,6 +215,28 @@ export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400 }:
         ))}
         <FitBounds items={allCoords} getCoords={(item) => (item as { geoStr: string }).geoStr} />
       </MapContainer>
+      {hasNdvi && (
+        <div style={{
+          position: "absolute", bottom: 12, right: 12, zIndex: 1000,
+          background: "var(--card-bg, #1e293b)", borderRadius: 8, padding: "8px 12px",
+          fontSize: "0.75rem", border: "1px solid var(--border, #334155)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+        }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>NDVI</div>
+          {[
+            { color: "#22c55e", label: "≥ 0.7 — Muy saludable" },
+            { color: "#84cc16", label: "0.5 – 0.7 — Moderado" },
+            { color: "#eab308", label: "0.3 – 0.5 — Escaso" },
+            { color: "#ef4444", label: "< 0.3 — Estrés" },
+            { color: "#94a3b8", label: "Sin datos" },
+          ].map(({ color, label }) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+              <div style={{ width: 12, height: 12, borderRadius: 2, background: color }} />
+              <span style={{ color: "var(--text-secondary, #94a3b8)" }}>{label}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

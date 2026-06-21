@@ -58,6 +58,10 @@ def _ensure_ee():
         if _ee_initialized:
             return
         creds_path = _resolve_gee_credentials()
+        if not os.path.exists(creds_path):
+            raise FileNotFoundError(
+                f"Archivo de credenciales GEE no encontrado: {creds_path}"
+            )
         try:
             credentials = ee.ServiceAccountCredentials(None, creds_path)
             project_id = GEE_PROJECT_ID or _extract_project_id(creds_path)
@@ -103,7 +107,10 @@ async def fetch_satellite_indices(
     latitude: float,
     longitude: float,
 ) -> SatelliteResponse:
-    await asyncio.to_thread(_ensure_ee)
+    try:
+        await asyncio.to_thread(_ensure_ee)
+    except (FileNotFoundError, OSError) as e:
+        raise ValueError(f"Capa satelital no disponible: {e}")
 
     point = ee.Geometry.Point([longitude, latitude])
 
