@@ -15,6 +15,7 @@ from infrastructure.relational_repo.models import (
 from infrastructure.relational_repo.repository import RelationalRepository
 from modules.auth.dependencies import get_db
 from modules.security.core.enums import RoleEnum
+from modules.security.core.hashing import hash_password
 from modules.security.get_current_user import get_current_user
 from modules.security.schemas import UserContext
 
@@ -231,6 +232,33 @@ async def update_usuario(
         data = body.model_dump(exclude_unset=True)
         for k, v in data.items():
             setattr(u, k, v)
+        await db.flush()
+        return u
+
+
+@router.post("/usuarios", response_model=UsuarioOut, status_code=201)
+async def create_usuario(
+    body: UsuarioCreate,
+    user: UserContext = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    async with db.begin():
+        from sqlalchemy import select
+        existing = await db.execute(
+            select(Usuario).where(Usuario.email_usuario == body.email_usuario)
+        )
+        if existing.scalar_one_or_none():
+            from fastapi import HTTPException
+            raise HTTPException(409, "El usuario ya existe")
+        u = Usuario(
+            email_usuario=body.email_usuario,
+            nombre=body.nombre,
+            telefono=body.telefono,
+            hash_password=hash_password(body.password),
+            rol=body.rol,
+            admin_email=body.admin_email or user.user_id,
+        )
+        db.add(u)
         await db.flush()
         return u
 

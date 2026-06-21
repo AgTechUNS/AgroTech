@@ -226,7 +226,9 @@ def _clasificar_alerta(
     if _evaluar_condicion(valor_calculado, umbral, operador):
         return "rojo"
     margen = abs(umbral) * 0.1 if abs(umbral) > 1e-6 else 0.1
-    umbral_cercano = umbral + margen if operador in (">", ">=") else umbral - margen
+    # El margen va hacia adentro: para ">" el cercano es un poco menor,
+    # para "<" el cercano es un poco mayor.
+    umbral_cercano = umbral - margen if operador in (">", ">=") else umbral + margen
     if _evaluar_condicion(valor_calculado, umbral_cercano, operador):
         return "amarillo"
     return "verde"

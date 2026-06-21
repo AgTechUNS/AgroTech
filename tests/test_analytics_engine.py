@@ -128,6 +128,8 @@ def test_evaluar_condicion_igual():
 def test_clasificar_alerta_rojo():
     assert _clasificar_alerta(5, 10, "<") == "rojo"
 
+
+
 def test_clasificar_alerta_verde():
     assert _clasificar_alerta(50, 10, "<") == "verde"
 

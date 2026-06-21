@@ -80,7 +80,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-
+app.state.limiter = limiter
 register_exception_handlers(app)
 
 app.include_router(auth_router)

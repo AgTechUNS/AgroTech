@@ -41,19 +41,34 @@ async def init_db() -> None:
         return
 
     async with _db.session_factory() as db:
-        seeds = [
-            ("agronomo@agtech.com", "Juan Agrónomo", "1234567890", "password123", "AGRONOMO"),
-            ("test@agtechuns.com", "Admin Test", "1234567890", "12345678", "ADMIN"),
-            ("productor@ejemplo.com", "Pedro Productor", "1234567890", "12345678", "PRODUCTOR"),
+        seed_users = [
+            Usuario(
+                email_usuario="agronomo@agtech.com",
+                nombre="Juan Agrónomo",
+                telefono="1234567890",
+                hash_password=hash_password("password123"),
+                rol="AGRONOMO",
+            ),
+            Usuario(
+                email_usuario="test@agtechuns.com",
+                nombre="Test Admin",
+                telefono="1234567890",
+                hash_password=hash_password("password123"),
+                rol="ADMIN",
+            ),
+            Usuario(
+                email_usuario="productor@ejemplo.com",
+                nombre="Productor Ejemplo",
+                telefono="1234567890",
+                hash_password=hash_password("password123"),
+                rol="PRODUCTOR",
+            ),
         ]
-        for email, nombre, telefono, pwd, rol in seeds:
+        for u in seed_users:
             result = await db.execute(
-                select(Usuario).where(Usuario.email_usuario == email)
+                select(Usuario).where(Usuario.email_usuario == u.email_usuario)
             )
             if result.scalar_one_or_none() is None:
-                db.add(Usuario(
-                    email_usuario=email, nombre=nombre, telefono=telefono,
-                    hash_password=hash_password(pwd), rol=rol,
-                ))
+                db.add(u)
+                logger.info("Seed: usuario de desarrollo creado | email=%s", u.email_usuario)
         await db.commit()
-        logger.info("Seed: %d usuarios de desarrollo creados/verificados", len(seeds))

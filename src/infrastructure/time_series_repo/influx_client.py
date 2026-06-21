@@ -1,3 +1,4 @@
+import asyncio
 import os
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
@@ -38,6 +39,7 @@ class TimeSeriesRepository:
         return self
 
     async def guardar_telemetria(self, lectura):
+        print("NUEVA_GUARDAR_TELEMETRIA_2026")
         try:
             if not self.client:
                 print(f"Cliente de InfluxDB no inicializado")
@@ -151,6 +153,7 @@ class TimeSeriesRepository:
         if self.client:
             try:
                 await self.client.close()
+                self.client = None
                 print(f"[TimeSeriesRepository] Conexión cerrada")
             except Exception as e:
                 print(f"Error al cerrar conexión: {e}")

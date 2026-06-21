@@ -40,6 +40,16 @@ def _resolve_gee_credentials() -> str:
     return default
 
 
+def _extract_project_id(creds_path: str) -> str | None:
+    """Intenta leer project_id del JSON de la service account."""
+    try:
+        with open(creds_path) as f:
+            data = json.load(f)
+        return data.get("project_id")
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
 def _ensure_ee():
     global _ee_initialized
     if _ee_initialized:
@@ -50,8 +60,12 @@ def _ensure_ee():
         creds_path = _resolve_gee_credentials()
         try:
             credentials = ee.ServiceAccountCredentials(None, creds_path)
-            ee.Initialize(credentials, project=GEE_PROJECT_ID)
+            project_id = GEE_PROJECT_ID or _extract_project_id(creds_path)
+            ee.Initialize(credentials, project=project_id)
             _ee_initialized = True
+        except Exception as e:
+            print(f"[GEE] Error al inicializar Earth Engine: {e}")
+            raise
         finally:
             if GEE_CREDENTIALS_JSON:
                 try:

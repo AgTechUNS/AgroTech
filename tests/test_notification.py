@@ -166,7 +166,7 @@ class TestNotifyDispatchesEmailAndSms(IsolatedAsyncioTestCase):
                 _email, "_SANDBOX_MODE", False
             ), patch.object(_sms, "_ALERT_PHONE", "+5491112345678"), patch.object(
                 _sms, "_get_client", lambda: DummyTwilioClient("sid", "token")
-            ):
+            ), patch.dict(os.environ, {"TWILIO_FROM": "+15017122661"}):
                 captured = io.StringIO()
                 with contextlib.redirect_stdout(captured):
                     await _email.send_email("mensaje", "Aviso")

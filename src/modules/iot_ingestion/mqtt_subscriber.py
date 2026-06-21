@@ -2,7 +2,6 @@ import paho.mqtt.client as mqtt
 import json
 import base64
 import asyncio
-import threading
 import time
 import os
 from collections import OrderedDict
@@ -44,6 +43,9 @@ class IotIngestionService:
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
         self.client.on_disconnect = self._on_disconnect
+        self.client.reconnect_delay_set(min_delay=1, max_delay=120)
+
+        self._main_loop: asyncio.AbstractEventLoop | None = None
 
         # Deduplicación
         self.dedup_cache = TTLCache(maxsize=10000, ttl=3600)
@@ -52,22 +54,19 @@ class IotIngestionService:
         self.write_queue: asyncio.Queue[LecturaNormalizada] = asyncio.Queue(maxsize=5000)
         self.dlq_path = os.path.join(os.path.dirname(__file__) or ".", "dlq_fallos.json")
 
-        self.loop = None
-        self.thread = None
-        self._start_async_loop()
+        self._worker_tasks: list[asyncio.Task] = []
 
         print(f"[IotIngestionService] Inicializado")
         print(f"   Broker: {self.broker}:{self.port}")
         print(f"   Workers: {self.num_workers}")
 
-    def _start_async_loop(self):
-        """Inicia event loop en thread separado + pool de workers."""
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(target=self.loop.run_forever, daemon=True)
-        self.thread.start()
+    def start_workers(self, loop: asyncio.AbstractEventLoop):
+        """Crea las tareas workers en el event loop indicado (debe ser el mismo donde se creó el repo)."""
+        self._main_loop = loop
         for i in range(self.num_workers):
-            asyncio.run_coroutine_threadsafe(self._worker_loop(i), self.loop)
-        print(f"[IotIngestionService] Event loop + {self.num_workers} workers iniciados")
+            task = asyncio.ensure_future(self._worker_loop(i), loop=loop)
+            self._worker_tasks.append(task)
+        print(f"[IotIngestionService] {self.num_workers} workers creados en event loop principal")
 
     async def _worker_loop(self, worker_id: int = 0):
         """Consume LecturaNormalizada de la cola y las persiste con retry."""
@@ -116,8 +115,17 @@ class IotIngestionService:
     def start(self):
         print(f"[IotIngestionService] Conectando a broker MQTT...")
         self.client.connect(self.broker, self.port, 60)
-        print("[IotIngestionService] Componente iniciado y escuchando...")
-        self.client.loop_forever()
+        self.client.loop_start()
+        print("[IotIngestionService] Componente iniciado y escuchando (loop_start)")
+
+    def stop(self):
+        """Detiene el loop MQTT y las tareas workers gracefulmente."""
+        print("[IotIngestionService] Deteniendo componente...")
+        self.client.loop_stop()
+        self.client.disconnect()
+        for task in self._worker_tasks:
+            task.cancel()
+        print("[IotIngestionService] Componente detenido.")
 
     def _on_connect(self, client, userdata, flags, rc):
         if rc == 0:
@@ -129,7 +137,7 @@ class IotIngestionService:
     
     def _on_disconnect(self, client, userdata, rc):
         if rc != 0:
-            print(f"[Warn]  [MQTT] Desconexión inesperada: código {rc}")
+            print(f"[Warn]  [MQTT] Desconexión inesperada: código {rc} — el cliente reintentará automáticamente")
 
     def _on_message(self, client, userdata, msg):
         try:
@@ -155,9 +163,6 @@ class IotIngestionService:
             parcela_id = lora_packet.get('parcela_id')
             print(f"[Data]  [MQTT] Datos parseados - Sensor: {device_id}, Campo: {campo_id}, Parcela: {parcela_id}, T: {temp}°C, H: {hum}%")
 
-            if temp < -20 or temp > 60:
-                print(f"[Warn]  Descartado: Temperatura ilógica ({temp}°C) en {device_id}")
-                return
 
             lectura_limpia = LecturaNormalizada(
                 sensor_id=device_id,
@@ -168,12 +173,13 @@ class IotIngestionService:
                 timestamp=datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
             )
 
-            # Encolar escritura — el worker se encarga del retry
-            asyncio.run_coroutine_threadsafe(
-                self.write_queue.put(lectura_limpia),
-                self.loop
-            )
-            print(f"[Encolado] Lectura encolada para persistir: {device_id}")
+            # Encolar escritura en el event loop principal
+            if self._main_loop:
+                asyncio.run_coroutine_threadsafe(
+                    self.write_queue.put(lectura_limpia),
+                    self._main_loop
+                )
+                print(f"[Encolado] Lectura encolada para persistir: {device_id}")
 
         except Exception as e:
             print(f"[Error]  Error interno procesando paquete: {e}")

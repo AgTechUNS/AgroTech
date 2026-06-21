@@ -14,14 +14,17 @@ Ningún otro módulo del paquete decide este orden — vive solo acá.
 """
 
 import asyncio
+import logging
 
-#from ._audit import log_notification
+from ._audit import log_notification
 from ._config import EMAIL, IN_APP, SMS, get_config
 from ._contracts import NotificationJob
 from ._deduplication import is_duplicate
 from ._providers._email import send_email
 from ._providers._sms import send_sms
 from ._providers._websocket import send_in_app
+
+logger = logging.getLogger(__name__)
 
 
 async def notify(job: NotificationJob) -> None:
@@ -51,12 +54,12 @@ async def notify(job: NotificationJob) -> None:
         (SMS, "twilio"),
     ]
 
-    #for result, (channel, provider) in zip(results, channel_providers):
-       #failed = isinstance(result, Exception)
-        # await log_notification(
-        #     job=job,
-        #     channel=channel,
-        #     status="FAILED" if failed else "SENT",
-        #     provider=provider,
-        #     error=str(result) if failed else None,
-        # )
+    for result, (channel, provider) in zip(results, channel_providers):
+        failed = isinstance(result, Exception)
+        await log_notification(
+            job=job,
+            channel=channel,
+            status="FAILED" if failed else "SENT",
+            provider=provider,
+            error=str(result) if failed else None,
+        )
