@@ -6,6 +6,6 @@ export async function GET(
   { params }: { params: { nombreCampo: string; nombreParcela: string } }
 ) {
   const proxy = await proxyToBackend(request, `/campos/${params.nombreCampo}/parcelas/${params.nombreParcela}/lecturas`, "GET");
-  if (proxy) return proxy;
+  if (proxy && proxy.status < 400) return proxy;
   return NextResponse.json({ data: [] });
 }

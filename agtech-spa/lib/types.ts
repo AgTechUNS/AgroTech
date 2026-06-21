@@ -90,11 +90,10 @@ export interface AlertaRecomendacion {
 }
 
 export interface Prediccion {
-  nombreParcela: string;
-  fecha: string;
-  temperatura_estimada: number;
-  humedad_estimada: number;
-  probabilidad_lluvia: number;
+  fechaEmision: string;
+  resultado: string;
+  fechaIni: string;
+  fechaFin: string;
 }
 
 export interface SatelitalData {

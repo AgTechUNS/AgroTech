@@ -7,26 +7,21 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { nombreCampo: string; nombreParcela: string } }
 ) {
-  const proxy = await proxyToBackend(request, `/api/campos/${params.nombreCampo}/parcelas/${params.nombreParcela}/predicciones`, "GET");
-  if (proxy) return proxy;
+  const proxy = await proxyToBackend(request, `/campos/${params.nombreCampo}/parcelas/${params.nombreParcela}/predicciones`, "GET");
+  if (proxy && proxy.status < 400) return proxy;
   const user = getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });
   }
 
   const nombreParcela = decodeURIComponent(params.nombreParcela);
-  const hoy = new Date();
-  const mockPredictions: Prediccion[] = Array.from({ length: 5 }, (_, i) => {
-    const fecha = new Date(hoy);
-    fecha.setDate(fecha.getDate() + i + 1);
-    return {
-      nombreParcela,
-      fecha: fecha.toISOString().split("T")[0],
-      temperatura_estimada: Math.round((18 + Math.random() * 10) * 10) / 10,
-      humedad_estimada: Math.round((40 + Math.random() * 40) * 10) / 10,
-      probabilidad_lluvia: Math.round(Math.random() * 100),
-    };
-  });
+  const ahora = new Date();
+  const mockPrediction: Prediccion = {
+    fechaEmision: ahora.toISOString(),
+    resultado: `Tendencia estable detectada (+0.5), condiciones normales para ${nombreParcela}. NDVI dentro de rango normal. Ambiente seco, monitorear riego. para ${nombreParcela} entre ${ahora.toISOString().split("T")[0]} y ${new Date(ahora.getTime() + 3 * 86400000).toISOString().split("T")[0]}`,
+    fechaIni: ahora.toISOString(),
+    fechaFin: new Date(ahora.getTime() + 3 * 86400000).toISOString(),
+  };
 
-  return NextResponse.json({ data: mockPredictions });
+  return NextResponse.json({ data: [mockPrediction], pagination: { page: 1, limit: 20, total: 1, totalPages: 1 } });
 }

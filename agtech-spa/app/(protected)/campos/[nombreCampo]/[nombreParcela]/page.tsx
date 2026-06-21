@@ -8,7 +8,8 @@ import { listarCampos } from "@/lib/services/campos";
 import { listarParcelas, eliminarParcela } from "@/lib/services/parcelas";
 import { listarSensores, listarLecturas } from "@/lib/services/sensores";
 import { obtenerSatelital, obtenerHistorialSatelital } from "@/lib/services/external";
-import { Campo, Parcela, Sensor, Lectura, SatelitalHistorialItem } from "@/lib/types";
+import { obtenerRecomendaciones, obtenerPredicciones } from "@/lib/services/analytics";
+import { Campo, Parcela, Sensor, Lectura, SatelitalHistorialItem, AlertaRecomendacion, Prediccion } from "@/lib/types";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { puedeEditar } from "@/lib/auth/roles";
 import { Card, Button, Spinner } from "@/components/ui";
@@ -35,6 +36,8 @@ export default function ParcelaDetallePage() {
   const [ndviData, setNdviData] = useState<Record<string, number>>({});
   const [ndviHistorial, setNdviHistorial] = useState<SatelitalHistorialItem[]>([]);
   const [satelitalError, setSatelitalError] = useState(false);
+  const [recomendaciones, setRecomendaciones] = useState<AlertaRecomendacion[]>([]);
+  const [predicciones, setPredicciones] = useState<Prediccion[]>([]);
 
 
   useEffect(() => {
@@ -63,6 +66,12 @@ export default function ParcelaDetallePage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+    obtenerRecomendaciones(nombreCampo, nombreParcela)
+      .then((r) => setRecomendaciones(r.data))
+      .catch(() => {});
+    obtenerPredicciones(nombreCampo, nombreParcela)
+      .then((r) => setPredicciones(r.data))
+      .catch(() => {});
   }, [nombreCampo, nombreParcela]);
 
   useEffect(() => {
@@ -191,6 +200,56 @@ export default function ParcelaDetallePage() {
           </ResponsiveContainer>
         </Card>
       )}
+
+      {recomendaciones.length > 0 && (
+        <Card title="Alertas y Recomendaciones" style={{ marginBottom: "1.5rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {recomendaciones.map((r, i) => (
+              <div
+                key={i}
+                style={{
+                  padding: "0.75rem 1rem",
+                  borderRadius: "var(--radius)",
+                  borderLeft: `4px solid ${r.tipo === "ALERTA_TIEMPO_REAL" ? "var(--danger, #ef4444)" : "var(--warning, #eab308)"}`,
+                  background: "var(--bg-glass)",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
+                  <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
+                    {r.tipo === "ALERTA_TIEMPO_REAL" ? "⚡ Alerta" : "📋 Recomendación"}
+                  </span>
+                  <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                    {new Date(r.fechaEmision).toLocaleString()}
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: "0.9rem" }}>{r.mensaje}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {predicciones.length > 0 && (
+        <Card title="Pronóstico a corto plazo" style={{ marginBottom: "1.5rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {predicciones.map((p, i) => (
+              <div key={i} style={{
+                padding: "0.75rem 1rem",
+                borderRadius: "var(--radius)",
+                background: "var(--bg-glass)",
+                borderLeft: "4px solid var(--accent, #3b82f6)",
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem", fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                  <span>Emitido: {new Date(p.fechaEmision).toLocaleString()}</span>
+                  <span>Válido: {new Date(p.fechaIni).toLocaleDateString()} – {new Date(p.fechaFin).toLocaleDateString()}</span>
+                </div>
+                <p style={{ margin: 0, fontSize: "0.9rem" }}>{p.resultado}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
+

@@ -5,7 +5,7 @@ import { obtenerPredicciones } from "@/lib/services/analytics";
 import { listarCampos } from "@/lib/services/campos";
 import { listarParcelas } from "@/lib/services/parcelas";
 import { Prediccion, Campo, Parcela } from "@/lib/types";
-import { Card, Table, Button, Spinner } from "@/components/ui";
+import { Card, Button, Spinner } from "@/components/ui";
 
 export default function PrediccionesPage() {
   const [data, setData] = useState<Prediccion[]>([]);
@@ -31,12 +31,6 @@ export default function PrediccionesPage() {
       .then((r) => setData(r.data))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }
-
-  function probLluviaColor(pct: number): string {
-    if (pct >= 70) return "var(--danger)";
-    if (pct >= 40) return "var(--warning)";
-    return "var(--success)";
   }
 
   return (
@@ -70,22 +64,23 @@ export default function PrediccionesPage() {
       </Card>
 
       {loading ? <Spinner /> : data.length > 0 && (
-        <Card title="Pronóstico diario">
-          <Table
-            columns={[
-              { header: "Fecha", accessor: (p: Prediccion) => p.fecha },
-              { header: "Temp. estimada", accessor: (p: Prediccion) => `${p.temperatura_estimada}°C` },
-              { header: "Humedad estimada", accessor: (p: Prediccion) => `${p.humedad_estimada}%` },
-              { header: "Prob. lluvia", accessor: (p: Prediccion) => (
-                <span style={{ color: probLluviaColor(p.probabilidad_lluvia), fontWeight: 600 }}>
-                  {p.probabilidad_lluvia}%
-                </span>
-              )},
-            ]}
-            data={data}
-            keyExtractor={(p) => p.fecha}
-            emptyMessage="No hay predicciones disponibles."
-          />
+        <Card title="Pronóstico">
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {data.map((p, i) => (
+              <div key={i} style={{
+                padding: "0.75rem 1rem",
+                borderRadius: "var(--radius)",
+                background: "var(--bg-glass)",
+                borderLeft: "4px solid var(--accent, #3b82f6)",
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem", fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                  <span>Emitido: {new Date(p.fechaEmision).toLocaleString()}</span>
+                  <span>Válido: {new Date(p.fechaIni).toLocaleDateString()} – {new Date(p.fechaFin).toLocaleDateString()}</span>
+                </div>
+                <p style={{ margin: 0, fontSize: "0.9rem" }}>{p.resultado}</p>
+              </div>
+            ))}
+          </div>
         </Card>
       )}
     </div>
