@@ -41,10 +41,13 @@ async def notify(job: NotificationJob) -> None:
     config = get_config(job.event_type)
     message = config.template(job)
 
+    if not job.recipient_id:
+        raise ValueError("recipient_id no está configurado")
+
     results = await asyncio.gather(
-        send_in_app(job.field_id, message),
-        send_email(message, config.label),
-        send_sms(message),
+        send_in_app(job.recipient_id, job.field_id, message),
+        send_email(message, config.label, job.recipient_email),
+        send_sms(message, job.recipient_phone),
         return_exceptions=True,
     )
 

@@ -32,6 +32,9 @@ class TestNotifyDispatchesEmailAndSms(IsolatedAsyncioTestCase):
     def setUp(self):
         self.job = NotificationJob(
             event_type=EventType.HEAT_STRESS,
+            recipient_id="user-1",
+            recipient_email="agricultor@example.com",
+            recipient_phone="+5491112345678",
             field_id="lote-4",
             value=38.5,
             threshold=35.0,
@@ -56,8 +59,8 @@ class TestNotifyDispatchesEmailAndSms(IsolatedAsyncioTestCase):
             f"🌡️ Alerta de Calor Extremo: temperatura máxima de {self.job.value}°C "
             f"detectada en {self.job.field_id} (umbral: {self.job.threshold}°C)."
         )
-        mock_send_email.assert_awaited_once_with(expected_message, "Calor Extremo")
-        mock_send_sms.assert_awaited_once_with(expected_message)
+        mock_send_email.assert_awaited_once_with(expected_message, "Calor Extremo", self.job.recipient_email)
+        mock_send_sms.assert_awaited_once_with(expected_message, self.job.recipient_phone)
 
     @patch("modules.notification_component._handler.send_email", new_callable=AsyncMock)
     @patch("modules.notification_component._handler.send_sms", new_callable=AsyncMock)
@@ -92,6 +95,9 @@ class TestNotifyDispatchesEmailAndSms(IsolatedAsyncioTestCase):
         mock_is_duplicate.return_value = False
         job = NotificationJob(
             event_type=EventType.HYDRIC_STRESS,
+            recipient_id="user-2",
+            recipient_email="agricultor2@example.com",
+            recipient_phone="+5491112345679",
             field_id="lote-7",
             value=22.0,
             threshold=30.0,
@@ -103,8 +109,8 @@ class TestNotifyDispatchesEmailAndSms(IsolatedAsyncioTestCase):
             f"💧 Alerta de Estrés Hídrico: humedad promedio de {job.value}% "
             f"en {job.field_id} por debajo del umbral ({job.threshold}%)."
         )
-        mock_send_email.assert_awaited_once_with(expected_message, "Estrés Hídrico")
-        mock_send_sms.assert_awaited_once_with(expected_message)
+        mock_send_email.assert_awaited_once_with(expected_message, "Estrés Hídrico", job.recipient_email)
+        mock_send_sms.assert_awaited_once_with(expected_message, job.recipient_phone)
 
     async def test_provider_logging_prints_destinations(self):
         from modules.notification_component._providers import _email, _sms
@@ -160,21 +166,19 @@ class TestNotifyDispatchesEmailAndSms(IsolatedAsyncioTestCase):
                 "twilio.rest": type("module", (), {"Client": DummyTwilioClient}),
             },
         ):
-            with patch.object(_email, "_SENDGRID_API_KEY", "dummy-key"), patch.object(
-                _email, "_ALERT_EMAIL", "dest@example.com"
-            ), patch.object(_email, "_FROM_EMAIL", "from@example.com"), patch.object(
+            with patch.object(_email, "_SENDGRID_API_KEY", "dummy-key"), patch.object(_email, "_FROM_EMAIL", "from@example.com"), patch.object(
                 _email, "_SANDBOX_MODE", False
-            ), patch.object(_sms, "_ALERT_PHONE", "+5491112345678"), patch.object(
+            ), patch.object(_sms, "_TWILIO_FROM", "+5491199999999"), patch.object(
                 _sms, "_get_client", lambda: DummyTwilioClient("sid", "token")
             ), patch.dict(os.environ, {"TWILIO_FROM": "+15017122661"}):
                 captured = io.StringIO()
                 with contextlib.redirect_stdout(captured):
-                    await _email.send_email("mensaje", "Aviso")
-                    await _sms.send_sms("mensaje")
+                    await _email.send_email("mensaje", "Aviso", "dest@example.com")
+                    await _sms.send_sms("mensaje", "+5491112345678")
 
         output = captured.getvalue()
         self.assertIn("Email enviado a dest@example.com desde from@example.com con asunto 'Aviso'", output)
-        self.assertIn("SMS enviado a +5491112345678 desde "+"", output)
+        self.assertIn("SMS enviado a +5491112345678 desde +5491199999999", output)
 
 
 if __name__ == "__main__":
