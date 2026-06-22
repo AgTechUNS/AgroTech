@@ -16,7 +16,6 @@ export function roleLabel(role: UserRole): string {
   const labels: Record<UserRole, string> = {
     ADMIN: "Administrador",
     AGRONOMO: "Agrónomo",
-    PRODUCTOR: "Productor",
   };
   return labels[role];
 }

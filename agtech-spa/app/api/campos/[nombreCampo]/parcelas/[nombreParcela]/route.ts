@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readParcelas, updateParcela, deleteParcela } from "@/lib/data/store";
-import { getUserFromRequest, getAdminEmail, requireAdmin } from "@/lib/auth/token";
+import { requireAdmin } from "@/lib/auth/token";
 import { proxyToBackend } from "@/lib/proxy";
 
 export async function GET(
@@ -8,21 +7,10 @@ export async function GET(
   { params }: { params: { nombreCampo: string; nombreParcela: string } }
 ) {
   const proxy = await proxyToBackend(request, `/api/campos/${params.nombreCampo}/parcelas/${params.nombreParcela}`, "GET");
-  if (proxy && proxy.status < 400) return proxy;
-  const user = getUserFromRequest(request);
-  if (!user) {
-    return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "No autenticado" } }, { status: 401 });
-  }
-  const adminEmail = getAdminEmail(user);
-  const nombreCampo = decodeURIComponent(params.nombreCampo);
-  const nombreParcela = decodeURIComponent(params.nombreParcela);
-
-  const parcelas = readParcelas(adminEmail, nombreCampo);
-  const parcela = parcelas.find((p) => p.nombreParcela === nombreParcela);
-  if (!parcela) {
-    return NextResponse.json({ error: { code: "NOT_FOUND", message: "Parcela no encontrada" } }, { status: 404 });
-  }
-  return NextResponse.json(parcela);
+  return proxy ?? NextResponse.json(
+    { error: { code: "SERVICE_UNAVAILABLE", message: "Backend no disponible" } },
+    { status: 502 }
+  );
 }
 
 export async function PUT(
@@ -33,33 +21,12 @@ export async function PUT(
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "Solo administradores" } }, { status: 403 });
   }
-  const adminEmail = getAdminEmail(user);
-  const nombreCampo = decodeURIComponent(params.nombreCampo);
-  const nombreParcela = decodeURIComponent(params.nombreParcela);
 
-  try {
-    const parcelas = readParcelas(adminEmail, nombreCampo);
-    const existe = parcelas.find((p) => p.nombreParcela === nombreParcela);
-    if (!existe) {
-      return NextResponse.json({ error: { code: "NOT_FOUND", message: "Parcela no encontrada" } }, { status: 404 });
-    }
-
-    const body = await request.json();
-    const { descripcionParcela, coordenadasParcela, nombreCultivo, variedad } = body;
-
-    updateParcela(nombreCampo, nombreParcela, {
-      descripcionParcela,
-      coordenadasParcela,
-      nombreCultivo: nombreCultivo ?? null,
-      variedad: variedad ?? null,
-    });
-    return NextResponse.json({ message: "Parcela actualizada exitosamente" });
-  } catch {
-    return NextResponse.json(
-      { error: { code: "UNKNOWN_ERROR", message: "Error al procesar la solicitud" } },
-      { status: 500 }
-    );
-  }
+  const proxy = await proxyToBackend(request, `/api/campos/${params.nombreCampo}/parcelas/${params.nombreParcela}`, "PUT");
+  return proxy ?? NextResponse.json(
+    { error: { code: "SERVICE_UNAVAILABLE", message: "Backend no disponible" } },
+    { status: 502 }
+  );
 }
 
 export async function DELETE(
@@ -70,23 +37,10 @@ export async function DELETE(
   if (!user) {
     return NextResponse.json({ error: { code: "FORBIDDEN", message: "Solo administradores" } }, { status: 403 });
   }
-  const adminEmail = getAdminEmail(user);
-  const nombreCampo = decodeURIComponent(params.nombreCampo);
-  const nombreParcela = decodeURIComponent(params.nombreParcela);
 
-  try {
-    const parcelas = readParcelas(adminEmail, nombreCampo);
-    const existe = parcelas.find((p) => p.nombreParcela === nombreParcela);
-    if (!existe) {
-      return NextResponse.json({ error: { code: "NOT_FOUND", message: "Parcela no encontrada" } }, { status: 404 });
-    }
-
-    deleteParcela(nombreCampo, nombreParcela);
-    return NextResponse.json({ message: "Parcela eliminada exitosamente" });
-  } catch {
-    return NextResponse.json(
-      { error: { code: "UNKNOWN_ERROR", message: "Error al procesar la solicitud" } },
-      { status: 500 }
-    );
-  }
+  const proxy = await proxyToBackend(request, `/api/campos/${params.nombreCampo}/parcelas/${params.nombreParcela}`, "DELETE");
+  return proxy ?? NextResponse.json(
+    { error: { code: "SERVICE_UNAVAILABLE", message: "Backend no disponible" } },
+    { status: 502 }
+  );
 }

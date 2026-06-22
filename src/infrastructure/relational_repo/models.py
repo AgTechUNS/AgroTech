@@ -24,7 +24,7 @@ class Usuario(Base):
     nombre: Mapped[str] = mapped_column(String(255), nullable=False)
     telefono: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     hash_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    rol: Mapped[str] = mapped_column(String(50), nullable=False, comment="ADMIN | AGRONOMO | PRODUCTOR")
+    rol: Mapped[str] = mapped_column(String(50), nullable=False, comment="ADMIN | AGRONOMO")
     admin_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
