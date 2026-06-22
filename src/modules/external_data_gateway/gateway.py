@@ -168,6 +168,11 @@ def _ndmi_a_humedad_suelo(ndmi: float) -> float:
 def parsear_coordenadas(coordenadas: str) -> tuple[float, float]:
     data = json.loads(coordenadas)
     geom_type = data.get("type", "")
+
+    if geom_type == "Feature":
+        geometry = data.get("geometry", {})
+        return parsear_coordenadas(json.dumps(geometry))
+
     coords = data.get("coordinates", [])
 
     if geom_type == "Point":
