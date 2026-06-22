@@ -9,7 +9,7 @@ export async function listarUsuarios(): Promise<Usuario[]> {
   return json.data as Usuario[];
 }
 
-export async function crearUsuario(payload: { email: string; rol: "ADMIN" | "AGRONOMO" | "PRODUCTOR" }): Promise<void> {
+export async function crearUsuario(payload: { email: string; rol: "ADMIN" | "AGRONOMO" }): Promise<void> {
   const res = await fetchWithAuth("/api/usuarios", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -20,7 +20,7 @@ export async function crearUsuario(payload: { email: string; rol: "ADMIN" | "AGR
   }
 }
 
-export async function editarUsuario(email: string, payload: { nombre?: string; password?: string; rol?: "ADMIN" | "AGRONOMO" | "PRODUCTOR" }): Promise<void> {
+export async function editarUsuario(email: string, payload: { nombre?: string; password?: string; rol?: "ADMIN" | "AGRONOMO" }): Promise<void> {
   const res = await fetchWithAuth(`/api/usuarios/${encodeURIComponent(email)}`, {
     method: "PUT",
     body: JSON.stringify(payload),

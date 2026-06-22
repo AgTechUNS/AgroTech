@@ -10,14 +10,13 @@ import { Card, Button } from "@/components/ui";
 
 const ROLES: { value: UserRole; label: string }[] = [
   { value: "AGRONOMO", label: "Agrónomo" },
-  { value: "PRODUCTOR", label: "Productor" },
 ];
 
 export default function CrearUsuarioPage() {
   const router = useRouter();
   const { user } = useAuthContext();
   const [email, setEmail] = useState("");
-  const [rol, setRol] = useState<UserRole>("PRODUCTOR");
+  const [rol, setRol] = useState<UserRole>("AGRONOMO");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

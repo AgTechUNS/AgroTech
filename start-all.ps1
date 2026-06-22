@@ -11,9 +11,9 @@ Write-Host "=== AgroTech - iniciando todos los sistemas ==="
 Write-Host ""
 
 # 1. FastAPI backend
-Write-Host ">>> [1] FastAPI backend -> http://localhost:8000"
+Write-Host ">>> [1] FastAPI backend -> http://localhost:8001"
 $bp = Start-Process -WindowStyle Normal -PassThru -FilePath "cmd.exe" `
-    -ArgumentList "/k python -m uvicorn src.main:app --host 127.0.0.1 --port 8000 --reload" `
+    -ArgumentList "/k python -m uvicorn src.main:app --host 127.0.0.1 --port 8001 --reload" `
     -WorkingDirectory $Root
 
 # 2. Next.js SPA
@@ -71,7 +71,7 @@ if ($Simulador) {
 Write-Host ""
 Write-Host "=== AgroTech iniciado ==="
 Write-Host ""
-Write-Host "  Backend:   http://localhost:8000"
+Write-Host "  Backend:   http://localhost:8001"
 Write-Host "  SPA:       http://localhost:3000"
 Write-Host ""
 if (-not $dockerOk) {

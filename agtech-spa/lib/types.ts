@@ -59,13 +59,13 @@ export interface Usuario {
   email: string;
   nombre: string;
   password: string;
-  rol: "ADMIN" | "AGRONOMO" | "PRODUCTOR";
+  rol: "ADMIN" | "AGRONOMO";
   adminEmail?: string;
 }
 
 export interface CreateUsuarioPayload {
   email: string;
-  rol: "ADMIN" | "AGRONOMO" | "PRODUCTOR";
+  rol: "ADMIN" | "AGRONOMO";
 }
 
 export interface LoginRequest {
@@ -146,7 +146,7 @@ export interface LoginResponse {
   expiresIn: number;
 }
 
-export type UserRole = "ADMIN" | "AGRONOMO" | "PRODUCTOR";
+export type UserRole = "ADMIN" | "AGRONOMO";
 
 export interface JwtPayload {
   sub: string;

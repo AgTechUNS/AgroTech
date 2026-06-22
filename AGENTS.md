@@ -60,7 +60,47 @@ All commands run from repo root. `src/` is implicitly the Python path root — d
 - **Notification component** uses `_`-prefixed private modules. Contract: build a `NotificationJob` and pass to the handler.
 - **GEE initialization** is a thread-safe singleton with `asyncio.to_thread`. Must have a valid service account.
 
-## Session context (Jun 20, 2026)
+## SPA architecture
+
+- **PostsgreSQL (Neon) es la fuente de verdad única**. La SPA es un proxy puro: todo CRUD se delega al backend FastAPI. No hay store local, no hay `.data/` filesystem.
+- **Auth**: login/refresh/logout se delegan al backend (`/auth/login`, etc.). No hay mock auth local. La password del seed user es `password123`.
+- **Analytics mocks** (satelital, weather, predicciones, recomendaciones, lecturas): conservan mock inline basado en `lib/utils/hash.ts` cuando el backend no está disponible (InfluxDB/GEE caídos). Estos mocks no persisten nada.
+- **PYTHONPATH**: `X:\Arqui\AgroTech\src` debe estar en PYTHONPATH antes de iniciar uvicorn. El `start-all.ps1` lo maneja automáticamente.
+- **Roles del sistema**: solo `ADMIN` y `AGRONOMO`. El rol `PRODUCTOR` fue eliminado. Password semilla: `password123`.
+
+## Session context (Jun 22, 2026)
+
+### What was done this session
+
+- **Store local eliminado**: `lib/data/store.ts`, `lib/data/seed.ts`, `lib/data/catalogo.ts` y `.data/` eliminados. PostgreSQL (Neon) es la única fuente de verdad.
+- **SPA proxy puro**: los 11 handlers CRUD (campos, parcelas, cultivos, reglas, usuarios, sensores) y 3 handlers auth (login, refresh, logout) ahora delegan completamente al backend. Sin lógica de validación/escritura local. Si el backend no está disponible o responde error, la SPA retorna 502 directamente.
+- **Analytics mocks conservados**: `satelital`, `weather`, `predicciones`, `recomendaciones`, `lecturas` mantienen su mock inline con datos determinísticos basados en `hash.ts`.
+- **Backend 409 en duplicados**: `POST /api/cultivos` retorna 409 Conflict con mensaje descriptivo si el cultivo ya existe.
+- **ProxyToBackend simplificado**: el proxy ahora retorna la respuesta del backend tal cual (status code, body). Sin interpretación de errores.
+- **Rol PRODUCTOR eliminado**: backend (`RoleEnum`, seed, schema) y SPA (types, forms, colores). Roles disponibles: solo `ADMIN` y `AGRONOMO`.
+- **Backend UsuarioCreate flexible**: acepta `email` (no `email_usuario`), auto-asigna `nombre` desde email, password por defecto `password123`, rol por defecto `AGRONOMO`.
+- **GEE integrado y funcional**: `GEE_CREDENTIALS_FILE=service_account.json` y `GEE_PROJECT_ID=agtechuns-gateway-2026` configurados en `.env`. `_ensure_ee()` inicializa correctamente Earth Engine. `fetch_satellite_indices()` retorna NDVI/NDMI real de Sentinel-2 (verificado con coordenadas reales: NDVI=0.2996, NDMI=-0.1793 para -33.0/-60.0 el 2026-06-21).
+
+### Key decisions
+
+- **Sin store local**: elimina inconsistencias entre datos PostgreSQL y datos locales. Toda la lógica de negocio (validación, conflictos, permisos) vive en el backend.
+- **Auth via backend**: login requiere backend operativo. Sin mock auth local. Password semilla: `password123`.
+- **Mocks analíticos inline**: se mantienen como fallback de emergencia si backend no responde, pero actualmente tanto InfluxDB como GEE están operativos y el proxy retorna datos reales.
+- **Rol PRODUCTOR eliminado**: backend (`RoleEnum`, seed, schema) y SPA (types, forms, colores). Roles disponibles: solo `ADMIN` y `AGRONOMO`.
+- **NDVI formula ya correcta**: `gateway.py` usa `normalizedDifference(["B8", "B4"])` para NDVI y `["B8", "B11"]` para NDMI, que es la fórmula correcta para Sentinel-2.
+- **GEE no necesita cambios de código**: solo credenciales. El `service_account.json` se referencia desde el repo root y está en `.gitignore`.
+
+### Current state (Jun 22)
+
+- Backend en `http://127.0.0.1:8001` con `--reload` ✅
+- SPA en `http://localhost:3000`, PYTHONPATH requiere `X:\Arqui\AgroTech\src` ✅
+- PostgreSQL (Neon) online ✅
+- Login funciona con `test@agtechuns.com` / `password123` ✅
+- **GEE integrado y funcional** — NDVI/NDMI real desde Sentinel-2 ✅
+- 37 unit tests backend pasan ✅
+- Docker/Mosquitto operativo (MQTT + sensor simulator corriendo)
+- InfluxDB Cloud funcional con datos de sensores
+- Notificaciones (Redis/Twilio/SendGrid): no verificadas
 
 ### What was done this session
 
@@ -84,15 +124,6 @@ All commands run from repo root. `src/` is implicitly the Python path root — d
 - External Data Gateway service layer (`gateway.py`) uses `ValueError` instead of `HTTPException`; router translates to `502` — keeps thin controller pattern.
 - `test_clasificar_alerta_amarillo` was removed because "amarillo" state is unreachable with current `_clasificar_alerta` implementation (design limitation, not a bug).
 
-### Current state (before reboot)
-
-- Server boots, JWT enforced ✅
-- 37 unit tests pass ✅
-- PostgreSQL (Neon) connected via `.env` ✅
-- InfluxDB Cloud credentials exist in `credenciales.env` (may or may not be valid)
-- **Docker NOT available** — Mosquitto broker cannot run locally
-- Full end-to-end integration test pending (needs Mosquitto + sensor simulator running)
-
 ### Next steps
 
 1. Install Docker Desktop for Windows and reboot
@@ -100,24 +131,23 @@ All commands run from repo root. `src/` is implicitly the Python path root — d
 3. Verify InfluxDB Cloud credentials with your classmate if connection fails
 4. Start MQTT ingestion: `python -m src.infrastructure.time_series_repo.bootstrap`
 5. Start sensor simulator: `python tools/simulador_sensores/lns_console.py` (with `BROKER=localhost` or your broker IP)
-6. Start FastAPI: `uvicorn src.main:app --reload`
-7. Get JWT via `POST /auth/login`, then exercise all endpoints
+6. Get JWT via `POST /auth/login`, then exercise all endpoints
 
 ### Relevant files
 
-- `src/modules/analytics_engine/router.py`: all 6 endpoints (GET recomendaciones/predicciones, POST/PUT/DELETE reglas, GET reglas by campo), JWT protected, DB rule lookup, historico mode, prediction persistence
-- `src/modules/analytics_engine/engine.py`: core rule evaluation (37 unit tests pass)
-- `src/modules/analytics_engine/models.py`: `ReglaUpdateRequest` added
-- `src/infrastructure/relational_repo/repository.py`: `get_regla_by_nombre_and_campo`, `update_regla`, `delete_regla`; `create_prediccion` accepts nullable `nombre_regla`
-- `src/infrastructure/relational_repo/ports.py`: matching interface methods
-- `src/infrastructure/relational_repo/models.py`: `Prediccion` FKs removed, `nombre_regla` nullable
-- `src/modules/external_data_gateway/router.py`: JWT protected, catches `ValueError` → `HTTPException(502)`
-- `src/modules/external_data_gateway/gateway.py`: no `HTTPException` import, raises `ValueError`; temp GEE file cleaned in `finally`
-- `src/modules/external_data_gateway/README.md`: routes and error table updated
-- `src/core/config.py`: reads `DATABASE_DSN` from env
-- `.env`: contains `DATABASE_DSN` with Neon asyncpg URL
+- `src/modules/external_data_gateway/gateway.py`: GEE init + NDVI/NDMI fetch from Sentinel-2; NDVI via `normalizedDifference(["B8", "B4"])`; thread-safe singleton init; Open-Meteo weather fetch
+- `src/modules/external_data_gateway/router.py`: 4 JWT-protected endpoints (`/external/weather`, `/external/satelital`, `/satelital/historial`, `/satelital/campo/{nombreCampo}`), persists NDVI to PostgreSQL when `nombre_parcela` + `nombre_campo` provided
+- `src/modules/analytics_engine/engine.py`: core rule evaluation (37 unit tests pass); `generar_prediccion()` consumes optional NDVI for richer predictions
+- `src/modules/analytics_engine/router.py`: all 6 endpoints (GET recomendaciones/predicciones, POST/PUT/DELETE reglas, GET reglas by campo), JWT protected, DB rule lookup, historico mode, prediction persistence; predictions endpoint calls `fetch_satellite_indices` when lat/lon provided
+- `src/infrastructure/relational_repo/repository.py`: `get_regla_by_nombre_and_campo`, `update_regla`, `delete_regla`; `create_prediccion` accepts nullable `nombre_regla`; `create_imagen_satelital`, `asociar_imagen_a_parcela`, `get_imagenes_by_parcela`
+- `src/core/config.py`: reads `DATABASE_DSN` from env; `Settings` dataclass has GEE fields (mirrored from env)
+- `.env`: `GEE_CREDENTIALS_FILE=service_account.json`, `GEE_PROJECT_ID=agtechuns-gateway-2026`, `DATABASE_DSN` with Neon asyncpg URL
+- `service_account.json`: GCP service account para `agtechuns-gateway-2026` (en `.gitignore`)
 - `api-agtechuns.yaml`: aligned paths, new PUT/DELETE/GET reglas endpoints, `ReglaRequest`/`ReglaResponse`/`ReglaUpdateRequest` schemas
 - `tests/test_analytics_engine.py`: 37 passing tests
 - `pytest.ini`: `asyncio_mode = auto`
 - `deploy/broker/docker-compose.yml`: Mosquitto MQTT broker (needs Docker)
 - `tools/simulador_sensores/credenciales.env`: InfluxDB Cloud credentials
+- `agtech-spa/lib/proxy.ts`: proxy genérico que reenvía requests al backend, retorna error 502 si falla
+- `agtech-spa/lib/utils/hash.ts`: shared `hash()`, `mockNdvi()`, `mockHumedadSuelo()` para mocks determinísticos
+- `agtech-spa/lib/auth/token.ts`: JWT decode/validate del lado SPA (sin dependencia de store local)

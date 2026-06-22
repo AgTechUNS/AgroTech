@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from pydantic.alias_generators import to_camel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,12 +31,20 @@ class S(BaseModel):
 # ── Usuario ─────────────────────────────────────────
 
 class UsuarioCreate(S):
-    email_usuario: EmailStr
-    nombre: str
+    email: EmailStr
+    nombre: str = ""
     telefono: str = ""
-    password: str = Field(min_length=8)
-    rol: str = "PRODUCTOR"
+    password: str = Field(default="password123", min_length=8)
+    rol: str = "AGRONOMO"
     admin_email: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def set_nombre(cls, data: dict) -> dict:
+        if not data.get("nombre"):
+            email = data.get("email", "")
+            data["nombre"] = email.split("@")[0] if isinstance(email, str) and "@" in email else email
+        return data
 
 class UsuarioUpdate(S):
     nombre: Optional[str] = None
@@ -249,13 +257,13 @@ async def create_usuario(
     async with db.begin():
         from sqlalchemy import select
         existing = await db.execute(
-            select(Usuario).where(Usuario.email_usuario == body.email_usuario)
+            select(Usuario).where(Usuario.email_usuario == body.email)
         )
         if existing.scalar_one_or_none():
             from fastapi import HTTPException
             raise HTTPException(409, "El usuario ya existe")
         u = Usuario(
-            email_usuario=body.email_usuario,
+            email_usuario=body.email,
             nombre=body.nombre,
             telefono=body.telefono,
             hash_password=hash_password(body.password),

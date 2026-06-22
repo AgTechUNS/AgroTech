@@ -11,7 +11,6 @@ import { Card, Button, Spinner } from "@/components/ui";
 const ROLES: { value: UserRole; label: string }[] = [
   { value: "ADMIN", label: "Administrador" },
   { value: "AGRONOMO", label: "Agrónomo" },
-  { value: "PRODUCTOR", label: "Productor" },
 ];
 
 export default function EditarUsuarioPage() {
@@ -20,7 +19,7 @@ export default function EditarUsuarioPage() {
   const { user } = useAuthContext();
   const email = decodeURIComponent(params.email as string);
   const [nombre, setNombre] = useState("");
-  const [rol, setRol] = useState<UserRole>("PRODUCTOR");
+  const [rol, setRol] = useState<UserRole>("AGRONOMO");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);

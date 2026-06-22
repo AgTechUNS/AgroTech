@@ -56,13 +56,7 @@ async def init_db() -> None:
                 hash_password=hash_password("password123"),
                 rol="ADMIN",
             ),
-            Usuario(
-                email_usuario="productor@ejemplo.com",
-                nombre="Productor Ejemplo",
-                telefono="1234567890",
-                hash_password=hash_password("password123"),
-                rol="PRODUCTOR",
-            ),
+
         ]
         for u in seed_users:
             result = await db.execute(

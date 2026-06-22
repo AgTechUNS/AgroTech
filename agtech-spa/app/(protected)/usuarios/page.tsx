@@ -63,7 +63,7 @@ export default function UsuariosPage() {
               {
                 header: "Rol",
                 accessor: (a: Usuario) => {
-                  const colors: Record<UserRole, string> = { ADMIN: "var(--accent)", AGRONOMO: "var(--success)", PRODUCTOR: "var(--warning)" };
+                  const colors: Record<UserRole, string> = { ADMIN: "var(--accent)", AGRONOMO: "var(--success)" };
                   return <span style={{ color: colors[a.rol], fontWeight: 600 }}>{roleLabel(a.rol)}</span>;
                 },
               },
