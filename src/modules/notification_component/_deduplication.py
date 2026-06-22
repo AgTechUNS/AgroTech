@@ -12,10 +12,13 @@ solo un caller puede "ganar" la escritura si dos eventos llegan al
 mismo tiempo para el mismo lote — no hay race condition posible.
 """
 
+import logging
 import os
 from typing import Any
 
 from ._contracts import NotificationJob
+
+logger = logging.getLogger(__name__)
 
 _TTL_SECONDS = 30 * 60  # 30 minutos: ventana de deduplicación
 
@@ -51,7 +54,11 @@ async def is_duplicate(job: NotificationJob) -> bool:
       - Si la key ya existía, Redis devuelve None -> es un duplicado
       - Si la key no existía, Redis la crea y devuelve True -> no lo es
     """
-    client = _get_client()
-    key = _dedup_key(job)
-    was_set = await client.set(key, "1", ex=_TTL_SECONDS, nx=True)
-    return was_set is None
+    try:
+        client = _get_client()
+        key = _dedup_key(job)
+        was_set = await client.set(key, "1", ex=_TTL_SECONDS, nx=True)
+        return was_set is None
+    except Exception:
+        logger.warning("Redis no disponible, se omite deduplicación", exc_info=True)
+        return False
