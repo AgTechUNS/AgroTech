@@ -43,11 +43,25 @@ async def generar_recomendaciones_diarias(
                     emailUsuario=emailUsuario,
                 )
             )
+            _recipient_id = emailUsuario or ""
+            _recipient_email = emailUsuario or ""
+            _recipient_phone = ""
+            if relational_repo is not None and emailUsuario:
+                try:
+                    _usuario = await relational_repo.get_usuario_by_email(emailUsuario)
+                    if _usuario and _usuario.telefono:
+                        _recipient_phone = _usuario.telefono
+                except Exception:
+                    logging.getLogger(__name__).warning("No se pudo obtener teléfono de %s", emailUsuario, exc_info=True)
+
             event_type = EventType.HYDRIC_STRESS if direccion == "bajo" else EventType.HEAT_STRESS
             field_id = f"{nombreCampo}/{nombreParcela}" if nombreCampo else nombreParcela
             try:
                 await notify(NotificationJob(
                     event_type=event_type,
+                    recipient_id=_recipient_id,
+                    recipient_email=_recipient_email,
+                    recipient_phone=_recipient_phone,
                     field_id=field_id,
                     value=promedio,
                     threshold=umbral,
