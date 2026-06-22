@@ -26,6 +26,10 @@ GEE_COLLECTION_NAME = os.getenv(
 _ee_initialized = False
 _ee_lock = threading.Lock()
 
+_CACHE_TTL = int(os.getenv("GEE_CACHE_TTL", "3600"))
+_cache: dict[str, tuple[float, SatelliteResponse]] = {}
+_cache_lock = threading.Lock()
+
 
 def _resolve_gee_credentials() -> str:
     if GEE_CREDENTIALS_JSON:
@@ -102,11 +106,38 @@ async def fetch_weather(latitude: float, longitude: float) -> WeatherResponse:
     )
 
 
+def _cache_key(lat: float, lon: float) -> str:
+    return f"{lat:.4f}:{lon:.4f}"
+
+
+def _get_cached(lat: float, lon: float) -> SatelliteResponse | None:
+    key = _cache_key(lat, lon)
+    with _cache_lock:
+        entry = _cache.get(key)
+        if entry is None:
+            return None
+        ts, resp = entry
+        if (datetime.now(timezone.utc) - ts).total_seconds() > _CACHE_TTL:
+            del _cache[key]
+            return None
+        return resp
+
+
+def _set_cached(lat: float, lon: float, resp: SatelliteResponse):
+    key = _cache_key(lat, lon)
+    with _cache_lock:
+        _cache[key] = (datetime.now(timezone.utc), resp)
+
+
 async def fetch_satellite_indices(
     parcel_id: str,
     latitude: float,
     longitude: float,
 ) -> SatelliteResponse:
+    cached = _get_cached(latitude, longitude)
+    if cached is not None:
+        return cached
+
     try:
         await asyncio.to_thread(_ensure_ee)
     except (FileNotFoundError, OSError) as e:
@@ -152,13 +183,15 @@ async def fetch_satellite_indices(
 
     ndvi_value, ndmi_value, epoch_ms = result
 
-    return SatelliteResponse(
+    response = SatelliteResponse(
         parcel_id=parcel_id,
         ndvi=ndvi_value,
         ndmi=ndmi_value,
         date=datetime.fromtimestamp(epoch_ms / 1000, tz=timezone.utc),
         source="Google Earth Engine",
     )
+    _set_cached(latitude, longitude, response)
+    return response
 
 
 def _ndmi_a_humedad_suelo(ndmi: float) -> float:
