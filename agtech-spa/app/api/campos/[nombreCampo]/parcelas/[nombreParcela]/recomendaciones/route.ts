@@ -34,7 +34,7 @@ export async function GET(
     alertas.push({
       tipo: "ALERTA_TIEMPO_REAL",
       fechaEmision: new Date(ahora).toISOString(),
-      mensaje: `Riesgo de estrés hídrico en ${nombreParcela} (${nombreCampo}): humedad promedio ${humedad}% por debajo del umbral 25.0%. NDVI actual ${ndvi}. Se recomienda ajustar el riego a ${30 + (s % 20)}mm en las próximas 48 horas.`,
+      mensaje: `[MOCK] Riesgo de estrés hídrico en ${nombreParcela} (${nombreCampo}): humedad promedio ${humedad}% por debajo del umbral 25.0%. NDVI actual ${ndvi}. Se recomienda ajustar el riego a ${30 + (s % 20)}mm en las próximas 48 horas.`,
       nombreParcela,
       emailUsuario: user.email,
     });
@@ -44,7 +44,7 @@ export async function GET(
     alertas.push({
       tipo: "ALERTA_TIEMPO_REAL",
       fechaEmision: new Date(ahora - 7200000).toISOString(),
-      mensaje: `Alerta de calor extremo en ${nombreParcela}: temperatura sostenida de ${temperatura}°C detectada en los últimos 30 minutos. Humedad ${humedad}%. Riesgo de daño foliar. Activar riego por aspersión de emergencia.`,
+      mensaje: `[MOCK] Alerta de calor extremo en ${nombreParcela}: temperatura sostenida de ${temperatura}°C detectada en los últimos 30 minutos. Humedad ${humedad}%. Riesgo de daño foliar. Activar riego por aspersión de emergencia.`,
       nombreParcela,
       emailUsuario: user.email,
     });
@@ -54,7 +54,7 @@ export async function GET(
     alertas.push({
       tipo: "ALERTA_TIEMPO_REAL",
       fechaEmision: new Date(ahora - 3600000).toISOString(),
-      mensaje: `Estrés combinado detectado en ${nombreParcela}: NDVI bajo (${ndvi}) y humedad crítica (${humedad}%). Posible pérdida de cobertura vegetal. Evaluar emergencia hídrica.`,
+      mensaje: `[MOCK] Estrés combinado detectado en ${nombreParcela}: NDVI bajo (${ndvi}) y humedad crítica (${humedad}%). Posible pérdida de cobertura vegetal. Evaluar emergencia hídrica.`,
       nombreParcela,
       emailUsuario: user.email,
     });
@@ -63,7 +63,7 @@ export async function GET(
   alertas.push({
     tipo: "RECOMENDACION_BATCH",
     fechaEmision: new Date(ahora - 3600000).toISOString(),
-    mensaje: `Reporte diario — ${nombreParcela}: temperatura máxima ${temperatura}°C, humedad mínima ${humedad}%, NDVI ${ndvi}.${parseFloat(temperatura) > 35 ? " Riesgo de estrés térmico en horas pico (12-16h). Monitorear cultivo y considerar cobertura con malla media sombra." : ""}${parseFloat(temperatura) <= 35 ? " Condiciones térmicas dentro del rango esperado. Ventana favorable para labores culturales." : ""}`,
+    mensaje: `[MOCK] Reporte diario — ${nombreParcela}: temperatura máxima ${temperatura}°C, humedad mínima ${humedad}%, NDVI ${ndvi}.${parseFloat(temperatura) > 35 ? " Riesgo de estrés térmico en horas pico (12-16h). Monitorear cultivo y considerar cobertura con malla media sombra." : ""}${parseFloat(temperatura) <= 35 ? " Condiciones térmicas dentro del rango esperado. Ventana favorable para labores culturales." : ""}`,
     nombreParcela,
     emailUsuario: user.email,
   });

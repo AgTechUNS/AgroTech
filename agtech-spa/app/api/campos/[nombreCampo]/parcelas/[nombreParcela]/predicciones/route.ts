@@ -69,7 +69,7 @@ export async function GET(
 
   const mockPrediction: Prediccion = {
     fechaEmision: ahora.toISOString(),
-    resultado: partes.join(". "),
+    resultado: `[MOCK] ${partes.join(". ")}`,
     fechaIni: ahora.toISOString(),
     fechaFin: fechaFin.toISOString(),
   };

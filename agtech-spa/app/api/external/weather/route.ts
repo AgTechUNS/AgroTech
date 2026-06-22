@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
   }
 
   const data: WeatherResponse = {
-    temperature_celsius: Math.round((15 + Math.random() * 15) * 10) / 10,
-    humidity_percent: Math.round((40 + Math.random() * 40) * 10) / 10,
+    temperature_celsius: 999,
+    humidity_percent: -1,
     timestamp: new Date().toISOString(),
     latitude: lat,
     longitude: lon,

@@ -26,10 +26,10 @@ export async function GET(request: NextRequest, { params }: { params: { path: st
   }
 
   if (params.path[0] === "historial" && nombreParcela) {
-    return NextResponse.json([]);
+    return NextResponse.json({ data: [{ ndvi: -999, fecha: new Date().toISOString(), nombreParcela }] });
   }
   if (params.path[0] === "campo" && nombreCampo) {
-    return NextResponse.json([]);
+    return NextResponse.json({ data: [{ ndvi: -999, nombreCampo }] });
   }
   return NextResponse.json(
     { error: { code: "NOT_FOUND", message: "Ruta no encontrada" } },
