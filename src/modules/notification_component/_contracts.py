@@ -37,7 +37,7 @@ class NotificationJob(BaseModel):
     event_type: EventType
     recipient_id: str = Field(..., description="Identificador del agricultor destinatario")
     recipient_email: str = Field(..., description="Correo electrónico del destinatario")
-    recipient_phone: str = Field(..., description="Teléfono del destinatario en formato E.164")
+    recipient_phone: str = Field(default="", description="Teléfono del destinatario en formato E.164 (opcional, SMS falla silenciosamente si está vacío)")
     field_id: str = Field(..., description="Identificador del lote, ej: 'lote-4'")
     value: float = Field(..., description="Valor medido que disparó la alerta")
     threshold: float = Field(..., description="Umbral configurado que fue cruzado")

@@ -143,6 +143,18 @@ async def consultar_recomendaciones(
     lecturas = await repo.query(query)
 
     alertas: list[AlertaRecomendacion] = []
+
+    _recipient_id = user.user_id
+    _recipient_email = user.user_id
+    _recipient_phone = ""
+    if relational_repo is not None:
+        try:
+            _usuario = await relational_repo.get_usuario_by_email(user.user_id)
+            if _usuario and _usuario.telefono:
+                _recipient_phone = _usuario.telefono
+        except Exception:
+            logger.warning("No se pudo obtener teléfono del usuario %s", user.user_id)
+
     resultado_humedad = await evaluar_umbral_humedad(
         lecturas, nombreParcela, umbral_humedad, ventana_minutos
     )
@@ -151,6 +163,9 @@ async def consultar_recomendaciones(
         try:
             await notify(NotificationJob(
                 event_type=resultado_humedad.event_type,
+                recipient_id=_recipient_id,
+                recipient_email=_recipient_email,
+                recipient_phone=_recipient_phone,
                 field_id=f"{nombreCampo}/{nombreParcela}",
                 value=resultado_humedad.valor_calculado,
                 threshold=resultado_humedad.umbral,
@@ -174,6 +189,9 @@ async def consultar_recomendaciones(
         try:
             await notify(NotificationJob(
                 event_type=resultado_temperatura.event_type,
+                recipient_id=_recipient_id,
+                recipient_email=_recipient_email,
+                recipient_phone=_recipient_phone,
                 field_id=f"{nombreCampo}/{nombreParcela}",
                 value=resultado_temperatura.valor_calculado,
                 threshold=resultado_temperatura.umbral,
