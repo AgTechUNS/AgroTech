@@ -1,10 +1,30 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui";
+import { listarCampos } from "@/lib/services/campos";
+import { listarCultivos } from "@/lib/services/cultivos";
+import { listarSensores } from "@/lib/services/sensores";
 
 export default function DashboardPage() {
   const { user } = useAuthContext();
+  const [campos, setCampos] = useState<number | null>(null);
+  const [cultivos, setCultivos] = useState<number | null>(null);
+  const [sensores, setSensores] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      listarCampos(1, 1).then(r => r.pagination.total).catch(() => null),
+      listarCultivos(1, 1).then(r => r.pagination.total).catch(() => null),
+      listarSensores().then(r => r.length).catch(() => null),
+    ]).then(([c, cu, s]) => {
+      setCampos(c);
+      setCultivos(cu);
+      setSensores(s);
+    }).finally(() => setLoading(false));
+  }, []);
 
   return (
     <div>
@@ -24,10 +44,10 @@ export default function DashboardPage() {
           gap: "1rem",
         }}
       >
-        <DashboardCard title="Campos" value="—" icon="🌾" />
-        <DashboardCard title="Cultivos" value="—" icon="🌱" />
+        <DashboardCard title="Campos" value={loading ? "—" : String(campos ?? "—")} icon="🌾" />
+        <DashboardCard title="Cultivos" value={loading ? "—" : String(cultivos ?? "—")} icon="🌱" />
         <DashboardCard title="Alertas activas" value="—" icon="⚠️" />
-        <DashboardCard title="Sensores" value="—" icon="📡" />
+        <DashboardCard title="Sensores" value={loading ? "—" : String(sensores ?? "—")} icon="📡" />
       </div>
     </div>
   );

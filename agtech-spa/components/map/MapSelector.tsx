@@ -6,8 +6,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import { DrawControl } from "./DrawControl";
-import { useTheme } from "@/contexts/ThemeContext";
-import { TILE_LIGHT, TILE_DARK, TILE_ATTR } from "./tiles";
+import { TILE_LIGHT, TILE_ATTR } from "./tiles";
 
 export interface ExistingPolygon {
   geojson: string;
@@ -65,7 +64,7 @@ function ExistingPolygonsLayer({ polygons }: { polygons: ExistingPolygon[] }) {
 }
 
 export function MapSelector({ onPolygonChange, height = 400, existingPolygons = [] }: MapSelectorProps) {
-  const { theme } = useTheme();
+
   const handlePolygonCreated = useCallback(
     (geojson: string) => onPolygonChange(geojson),
     [onPolygonChange]
@@ -81,7 +80,7 @@ export function MapSelector({ onPolygonChange, height = 400, existingPolygons = 
       >
         <TileLayer
           attribution={TILE_ATTR}
-          url={theme === "dark" ? TILE_DARK : TILE_LIGHT}
+          url={TILE_LIGHT}
         />
         <ExistingPolygonsLayer polygons={existingPolygons} />
         <DrawControl onPolygonCreated={handlePolygonCreated} />

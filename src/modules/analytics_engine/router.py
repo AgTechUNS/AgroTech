@@ -29,7 +29,7 @@ from modules.security.get_current_user import get_current_user
 from modules.security.schemas import UserContext
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/campos", tags=["Analítica"])
+router = APIRouter(prefix="/api/campos", tags=["Analítica"])
 
 
 def _obtener_repo(request: Request) -> TimeSeriesRepository | None:

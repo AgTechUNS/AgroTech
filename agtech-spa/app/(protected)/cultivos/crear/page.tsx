@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { crearCultivo, listarCatalogoCultivos } from "@/lib/services/cultivos";
-import { CatalogoCultivo } from "@/lib/types";
+import { crearCultivo } from "@/lib/services/cultivos";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { puedeEditar } from "@/lib/auth/roles";
 import { Card, Button } from "@/components/ui";
@@ -13,45 +12,24 @@ export default function CrearCultivoPage() {
   const { user } = useAuthContext();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [catalogo, setCatalogo] = useState<CatalogoCultivo[]>([]);
-  const [selectedCrop, setSelectedCrop] = useState("");
-  const [selectedVariety, setSelectedVariety] = useState("");
+  const [nombreCultivo, setNombreCultivo] = useState("");
+  const [variedad, setVariedad] = useState("");
 
   useEffect(() => {
     if (!puedeEditar(user)) router.push("/dashboard");
   }, [user, router]);
 
-  useEffect(() => {
-    listarCatalogoCultivos()
-      .then(setCatalogo)
-      .catch(() => setError("Error al cargar el catálogo"));
-  }, []);
-
-  const cropNames = Array.from(new Set(catalogo.map((c) => c.nombreCultivo))).sort();
-  const availableVarieties = catalogo.filter((c) => c.nombreCultivo === selectedCrop);
-  const selectedEntry = catalogo.find(
-    (c) => c.nombreCultivo === selectedCrop && c.variedad === selectedVariety
-  );
-
-  function handleCropChange(crop: string) {
-    setSelectedCrop(crop);
-    setSelectedVariety("");
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedEntry) {
-      setError("Seleccioná un cultivo y una variedad.");
+    if (!nombreCultivo.trim() || !variedad.trim()) {
+      setError("Completá el nombre del cultivo y la variedad.");
       return;
     }
 
     setSubmitting(true);
     setError(null);
     try {
-      await crearCultivo({
-        nombreCultivo: selectedEntry.nombreCultivo,
-        variedad: selectedEntry.variedad,
-      });
+      await crearCultivo({ nombreCultivo: nombreCultivo.trim(), variedad: variedad.trim() });
       router.push("/cultivos");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear el cultivo.");
@@ -68,16 +46,18 @@ export default function CrearCultivoPage() {
         Nuevo cultivo
       </h1>
       <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
-        Seleccioná un cultivo del catálogo y su variedad
+        Ingresá el nombre del cultivo y la variedad
       </p>
 
       <Card>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Cultivo</span>
-            <select
-              value={selectedCrop}
-              onChange={(e) => handleCropChange(e.target.value)}
+            <input
+              type="text"
+              value={nombreCultivo}
+              onChange={(e) => setNombreCultivo(e.target.value)}
+              placeholder="Ej: Trigo, Maíz, Soja..."
               style={{
                 padding: "0.5rem 0.75rem",
                 borderRadius: "var(--radius)",
@@ -86,38 +66,25 @@ export default function CrearCultivoPage() {
                 background: "var(--bg-input)",
               }}
               required
-            >
-              <option value="">Seleccioná un cultivo</option>
-              {cropNames.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
+            />
           </label>
 
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Variedad</span>
-            <select
-              value={selectedVariety}
-              onChange={(e) => setSelectedVariety(e.target.value)}
-              disabled={!selectedCrop}
+            <input
+              type="text"
+              value={variedad}
+              onChange={(e) => setVariedad(e.target.value)}
+              placeholder="Ej: ACA 303, DK 390, NS 4611..."
               style={{
                 padding: "0.5rem 0.75rem",
                 borderRadius: "var(--radius)",
                 border: "1px solid var(--border)",
                 fontSize: "1rem",
-                background: !selectedCrop ? "var(--bg-glass)" : "var(--bg-input)",
+                background: "var(--bg-input)",
               }}
               required
-            >
-              <option value="">Seleccioná una variedad</option>
-              {availableVarieties.map((v) => (
-                <option key={v.variedad} value={v.variedad}>
-                  {v.variedad}
-                </option>
-              ))}
-            </select>
+            />
           </label>
 
           {error && (
@@ -127,7 +94,7 @@ export default function CrearCultivoPage() {
           )}
 
           <div style={{ display: "flex", gap: "0.8rem" }}>
-            <Button type="submit" loading={submitting} disabled={!selectedEntry}>
+            <Button type="submit" loading={submitting} disabled={!nombreCultivo.trim() || !variedad.trim()}>
               Guardar cultivo
             </Button>
             <Button variant="ghost" onClick={() => router.push("/cultivos")}>

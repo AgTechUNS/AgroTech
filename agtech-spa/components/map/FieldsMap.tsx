@@ -5,8 +5,7 @@ import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Campo, Parcela, Sensor, Lectura } from "@/lib/types";
-import { useTheme } from "@/contexts/ThemeContext";
-import { TILE_LIGHT, TILE_DARK, TILE_ATTR } from "./tiles";
+import { TILE_LIGHT, TILE_ATTR } from "./tiles";
 
 interface FieldsMapProps {
   fields?: Campo[];
@@ -74,7 +73,7 @@ function ndviLabel(ndvi: number | undefined): string {
 }
 
 export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400, ndviPorParcela }: FieldsMapProps) {
-  const { theme } = useTheme();
+
   const hasData = (fields && fields.length > 0) || (parcels && parcels.length > 0);
   if (!hasData) return null;
 
@@ -195,7 +194,7 @@ export function FieldsMap({ fields, parcels, sensores, lecturas, height = 400, n
       >
         <TileLayer
           attribution={TILE_ATTR}
-          url={theme === "dark" ? TILE_DARK : TILE_LIGHT}
+          url={TILE_LIGHT}
         />
         {allItems.map((item, i) => (
           <GeoJSON

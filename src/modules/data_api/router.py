@@ -736,11 +736,10 @@ async def create_cultivo(
             status_code=409,
             detail=f"Ya existe el cultivo '{body.nombre_cultivo}' variedad '{body.variedad}'",
         )
-    async with db.begin():
-        c = Cultivo(**body.model_dump(), admin_email=user.user_id)
-        db.add(c)
-        await db.flush()
-        return c
+    c = Cultivo(**body.model_dump(), admin_email=user.user_id)
+    db.add(c)
+    await db.flush()
+    return c
 
 
 @router.delete("/cultivos", status_code=204)

@@ -92,3 +92,5 @@ app.include_router(analytics_router)
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+

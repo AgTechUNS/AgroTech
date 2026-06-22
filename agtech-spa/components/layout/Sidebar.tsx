@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import { roleLabel } from "@/lib/auth/roles";
 
 interface NavSubItem {
@@ -46,7 +45,6 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuthContext();
-  const { theme, toggle } = useTheme();
 
   function canSee(item: NavItem): boolean {
     if (item.adminOnly && user?.role !== "ADMIN") return false;
@@ -176,31 +174,6 @@ export function Sidebar() {
           Rol: {user?.role ? roleLabel(user.role) : "—"}
         </div>
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button
-            onClick={toggle}
-            title={`Cambiar a modo ${theme === "dark" ? "claro" : "oscuro"}`}
-            style={{
-              flex: 1,
-              background: "var(--bg-glass)",
-              border: "1px solid var(--border)",
-              color: "var(--text-secondary)",
-              padding: "0.4rem",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "0.85rem",
-              transition: "all var(--transition)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--bg-glass-hover)";
-              e.currentTarget.style.borderColor = "var(--border-hover)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "var(--bg-glass)";
-              e.currentTarget.style.borderColor = "var(--border)";
-            }}
-          >
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
           <button
             onClick={logout}
             style={{
